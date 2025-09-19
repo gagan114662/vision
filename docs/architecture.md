@@ -4,12 +4,13 @@
 - **Presentation & Oversight Layer**: Human dashboards, Alpha Council review portal, documentation viewers.
 - **Agent Orchestration Layer**: Meta-Supervisor (LangGraph/CrewAI), role-specific agents (Strategy Lab, Data Edge, Execution Ops, Risk Sentinel, Compliance Guardian, Security Watch, QA/Test Architect, Ops/SRE) managed via BMad workflows.
 - **Tooling & Integration Layer**: MCP registry, semtools semantic router, tool metadata store, provenance ledger API, experiment tracker, QA automation.
-- **Data & Compute Layer**: Real market/alt data ingestion, knowledge graph, feature store, QuantConnect Lean Docker cluster, colocation execution nodes, secrets vault, observability stack.
+- **Data & Compute Layer**: Real market/alt data ingestion, knowledge graph, feature store, QuantConnect Lean Docker cluster with compilation health checks, colocation execution nodes, secrets vault, observability stack.
 
 ## 2. Agent Ecosystem
 - **Meta-Supervisor**: Orchestrates planning, debate, and execution cycles; enforces BMad stage gates and compliance checkpoints.
 - **Strategy Lab Agents**: Generate hypotheses from knowledge graph and expert council notes; interact with data tools, feature calculators, and Lean backtesting MCP.
 - **Data Edge Agent**: Manages ingestion pipelines, QC scoring, anomaly detection, vendor reconciliation, provenance updates.
+- **Innovation Scout Agent**: Continuously scans vetted external sources (e.g., MQL5 research, GitHub releases like options-implied-probability, DeepResearch) and generates structured proposals with provenance for Meta-Supervisor review.
 - **Execution Ops Agent**: Coordinates smart order routing, latency monitoring, TCA ingestion from live/paper trading runs.
 - **Risk Sentinel**: Evaluates strategies against VaR/CVaR, liquidity, concentration limits, historical crisis scenarios.
 - **Compliance Guardian**: Checks regulatory mappings, audit trail completeness, reporting requirements.
@@ -25,6 +26,9 @@
   - Dual embedding indexes (finance-domain model, general model).
   - Metadata includes cost, latency, provenance requirements, freshness timestamp.
   - Rejection sampling + human escalation for low-confidence selections.
+- **Research Feed Ingestion**
+  - Innovation Scout leverages retrieval tools to monitor curated RSS feeds, academic databases, and open-source repositories.
+  - MCP resources persist vetted content with provenance IDs, review dates, and compliance tags so agents cite verified sources only.
 - **Workflow Engine**
   - LangGraph/CrewAI hybrid for deterministic paths: research planning → QA risk design → development → validation → compliance review → deployment.
   - AlphaEvolve evolutionary scheduler integrates with Meta-Supervisor to mutate prompts/tool chains and re-run competitions.
@@ -44,6 +48,7 @@
 - **Compute**
   - Research cluster (cloud GPUs/CPUs) for feature engineering & modeling.
   - Lean Docker cluster orchestrated via Kubernetes or equivalent; secrets injected at runtime.
+  - Continuous integration pipeline executes Lean compilation dry-runs (`lean cloud backtest --dry-run`) and caching of dependencies to mitigate frequent compile/runtime issues.
   - Colocation nodes for low-latency execution; telemetry piped back to observability stack.
 
 ## 5. Backtesting & Experimentation
@@ -71,11 +76,13 @@
 - **Telemetry**: Prometheus/Grafana or cloud equivalents collecting metrics for data pipelines, Lean jobs, agent activity, execution latency.
 - **Incident Response**: Playbooks stored in docs/runbooks/, triggered via Ops agent, integrated with paging/alerting.
 - **Cost Management**: Budget governance tool reading API usage, compute cost; enforces throttles and approval workflows.
+- **Lean Reliability Monitoring**: Automated health checks track compile/backtest durations, cache hits, and failure signatures; Ops/SRE agents receive alerts when metrics breach SLOs.
 
 ## 8. Evolution & Scalability
 - Phased rollout: equities universe baseline → add sectors/regions → introduce derivatives once validated.
 - Adversarial mirror agents simulate sophisticated competitors using real trade data to identify vulnerabilities.
 - Continuous embedding retraining and tool metadata refresh ensure semtools routing stays accurate.
+- Innovation Scout maintains a rolling research backlog; after validation, accepted findings update MCP tools, training data, and documentation via automated PR workflows.
 
 ## 9. Open Architecture Questions
 - Preferred ledger technology for provenance (e.g., immudb vs. append-only SQL)?

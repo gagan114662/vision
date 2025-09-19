@@ -22,3 +22,4 @@
 - Extended MCP coverage with feature engineering, risk, and compliance servers plus schemas and tests; local suite expanded to 21 tests.
 - Added default Lean monthly universe strategy and config; semtools metadata now references expanded toolset.
 - Added CLI helper `scripts/tooling/run_monthly_backtest.py` to trigger default Lean strategy with secure env vars.
+- Captured continuous innovation plan (Innovation Scout agent, research feed ingestion, Lean compile CI) across architecture and roadmap.
