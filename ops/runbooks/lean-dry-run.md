@@ -7,7 +7,10 @@ Ensure QuantConnect Lean compilation/backtest issues are caught before strategy 
 1. In the GitHub repository settings (`Settings → Secrets and variables → Actions`), add:
    - `QUANTCONNECT_USER_ID` = `357130`
    - `QUANTCONNECT_API_TOKEN` = *(use secure storage; never commit)*
-2. Optional: store the same secrets locally via a `.env` file when testing `scripts/ci/lean_dry_run.sh`.
+2. Optional: store the same secrets locally in `.env.local` (ignored by git) and source it before running scripts:
+   ```bash
+   source .env.local
+   ```
 
 ## Manual Execution
 ```bash
