@@ -1,0 +1,41 @@
+# MCP Tool Registry (Initial Draft)
+version: 0.1.0
+namespaces:
+  market-data:
+    tools:
+      - id: market-data.pricing.get_ohlcv
+        schema: schemas/tool.market-data.pricing.get_ohlcv.schema.json
+        response_schema: schemas/tool.market-data.pricing.get_ohlcv.response.schema.json
+        description: Retrieve verified OHLCV data with provenance references.
+        auth: rbac-token
+        signing: required
+  altdata:
+    tools: []
+  provenance:
+    tools:
+      - id: provenance.get_record
+        schema: schemas/tool.provenance.get_record.schema.json
+        response_schema: schemas/tool.provenance.get_record.response.schema.json
+        description: Retrieve a provenance record by ID with full validation metadata.
+        auth: rbac-token
+        signing: required
+  strategy.eval:
+    tools:
+      - id: strategy.eval.run_backtest
+        schema: schemas/tool.strategy.eval.run_backtest.schema.json
+        response_schema: schemas/tool.strategy.eval.run_backtest.response.schema.json
+        description: Execute Lean backtest inside Docker and return statistics summary.
+        auth: rbac-token
+        signing: required
+  risk:
+    tools: []
+  compliance:
+    tools: []
+  qa:
+    tools: []
+  ops:
+    tools: []
+metadata:
+  default_verbosity: concise
+  verbose_threshold: 0.7
+  provenance_required: true

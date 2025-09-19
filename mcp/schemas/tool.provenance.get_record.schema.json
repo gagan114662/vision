@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProvenanceGetRecord",
+  "type": "object",
+  "required": ["record_id"],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier of the provenance record to retrieve."
+    }
+  },
+  "additionalProperties": false
+}

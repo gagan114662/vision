@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProvenanceGetRecordResponse",
+  "type": "object",
+  "required": ["record"],
+  "properties": {
+    "record": {
+      "$ref": "./provenance_record.schema.json"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the record was returned."
+    }
+  },
+  "additionalProperties": false
+}

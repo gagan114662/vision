@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RunBacktestResponse",
+  "type": "object",
+  "required": ["project", "statistics_file", "log_file", "statistics"],
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Lean project name executed."
+    },
+    "statistics_file": {
+      "type": "string",
+      "description": "Path to JSON statistics output."
+    },
+    "log_file": {
+      "type": "string",
+      "description": "Path to captured CLI log file."
+    },
+    "statistics": {
+      "type": "string",
+      "description": "Serialized statistics JSON (stringified to avoid schema drift)."
+    }
+  },
+  "additionalProperties": false
+}

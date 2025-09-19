@@ -1,0 +1,34 @@
+# semtools Metadata (Initial Draft)
+embeddings:
+  primary: finance-embedding-model-v1
+  secondary: general-embedding-model-v2
+routing:
+  rejection_threshold: 0.35
+  human_escalation_threshold: 0.15
+  update_schedule: nightly
+  audit_log: data/processed/semtools-routing-log.csv
+metadata_fields:
+  - cost_estimate
+  - latency_budget_ms
+  - provenance_required
+  - freshness_ts
+  - compliance_tags
+initial_tools:
+  - name: market-data.pricing.get_ohlcv
+    description: Retrieve verified OHLCV bars from exchange-approved providers.
+    cost_estimate: medium
+    latency_budget_ms: 500
+    provenance_required: true
+    compliance_tags: ["reg_scid" , "miFID"]
+  - name: strategy.eval.run_backtest
+    description: Trigger QuantConnect Lean Docker backtest run.
+    cost_estimate: high
+    latency_budget_ms: 3600000
+    provenance_required: true
+    compliance_tags: ["model_validation"]
+  - name: risk.limits.evaluate_portfolio
+    description: Evaluate portfolio exposures against VaR/CVaR and concentration limits.
+    cost_estimate: medium
+    latency_budget_ms: 2000
+    provenance_required: true
+    compliance_tags: ["risk" , "reg_scid"]

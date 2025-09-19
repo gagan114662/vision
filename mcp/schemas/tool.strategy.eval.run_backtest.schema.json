@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RunBacktestRequest",
+  "type": "object",
+  "required": ["project", "algorithm_path", "config_path"],
+  "properties": {
+    "project": {
+      "type": "string",
+      "description": "Lean project name to execute."
+    },
+    "algorithm_path": {
+      "type": "string",
+      "description": "Path to the algorithm file (Python or C#)."
+    },
+    "config_path": {
+      "type": "string",
+      "description": "Path to Lean configuration file."
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Optional parameter dictionary passed to Lean CLI."
+    }
+  },
+  "additionalProperties": false
+}

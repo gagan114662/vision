@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GetOHLCVResponse",
+  "type": "object",
+  "required": ["symbol", "interval", "rows", "provenance_ids"],
+  "properties": {
+    "symbol": {
+      "type": "string"
+    },
+    "interval": {
+      "type": "string"
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "open", "high", "low", "close", "volume"],
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "open": {"type": "number"},
+          "high": {"type": "number"},
+          "low": {"type": "number"},
+          "close": {"type": "number"},
+          "volume": {"type": "number"},
+          "provenance_id": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "provenance_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": false
+}

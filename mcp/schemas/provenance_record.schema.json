@@ -1,0 +1,85 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProvenanceRecord",
+  "type": "object",
+  "required": [
+    "record_id",
+    "source_id",
+    "source_type",
+    "ingested_at",
+    "qc_score",
+    "validation_notes",
+    "hash",
+    "data_location"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Unique identifier for provenance entry (UUID)."
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Vendor or feed identifier (e.g., exchange code)."
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "exchange",
+        "fundamental",
+        "regulatory",
+        "altdata",
+        "expert_transcript"
+      ],
+      "description": "Classification of the data source."
+    },
+    "dataset_name": {
+      "type": "string",
+      "description": "Logical dataset name or table reference."
+    },
+    "instrument": {
+      "type": "string",
+      "description": "Ticker or instrument identifier when applicable."
+    },
+    "ingested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when data was ingested into pipeline."
+    },
+    "qc_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Quality score assigned after validation."
+    },
+    "validation_notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of validation checks performed with outcomes."
+    },
+    "hash": {
+      "type": "string",
+      "description": "SHA256 hash of raw file or dataset chunk."
+    },
+    "data_location": {
+      "type": "string",
+      "description": "URI/path to stored data (secured)."
+    },
+    "lineage_parent_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of upstream provenance record IDs."
+    },
+    "regulatory_tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags required for compliance reporting (e.g., 'MiFID', 'SEC')."
+    }
+  },
+  "additionalProperties": false
+}

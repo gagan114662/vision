@@ -1,0 +1,60 @@
+# Meta-Supervisor Workflow (LangGraph-style pseudocode)
+nodes:
+  intake:
+    type: human
+    description: "Receive new strategy or infrastructure requests from Alpha Council."
+  planning:
+    type: agent
+    agent: pm
+    input: intake.output
+    actions:
+      - validate_prd_alignment
+      - shard_into_epics
+  qa_risk_design:
+    type: agent
+    agent: qa
+    input: planning.output
+    actions:
+      - run_qa_macro: "@qa *risk"
+      - run_qa_macro: "@qa *design"
+  research_loop:
+    type: agent
+    agent: strategy_lab
+    input: qa_risk_design.output
+    actions:
+      - call_tool: market-data.pricing.get_ohlcv
+      - call_tool: feature-engineering.compute_factor
+      - call_tool: strategy.eval.run_backtest
+      - log_experiment
+  guardrails:
+    type: agent
+    agent: risk_sentinel
+    input: research_loop.output
+    actions:
+      - call_tool: risk.limits.evaluate_portfolio
+      - call_tool: compliance.generate_summary
+      - escalate_if_breach
+  human_review:
+    type: human
+    description: "Alpha Council review with provenance evidence."
+    input: guardrails.output
+  deployment:
+    type: agent
+    agent: execution_ops
+    condition: human_review.approved
+    actions:
+      - prepare_paper_trading
+      - schedule_monitoring
+transitions:
+  - from: intake
+    to: planning
+  - from: planning
+    to: qa_risk_design
+  - from: qa_risk_design
+    to: research_loop
+  - from: research_loop
+    to: guardrails
+  - from: guardrails
+    to: human_review
+  - from: human_review
+    to: deployment
