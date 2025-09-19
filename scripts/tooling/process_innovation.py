@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 from datetime import datetime, timezone
 
 from mcp.servers import research_feed_server, robustness_server, chart_server
+from mcp.wrappers.lean_backtest import REQUIRED_ENV_VARS
 
 FEED_PATH = Path("data/processed/research_feed.json")
 from mcp.wrappers import lean_backtest
@@ -43,6 +45,8 @@ def main() -> None:
     print(f"Processing insight {insight['id']} from {insight['source_id']}")
 
     _update_insight(insight["id"], status="in-validation")
+
+    _ensure_credentials()
 
     backtest_result = lean_backtest.run_backtest(
         project=args.project,
@@ -113,6 +117,15 @@ def _update_insight(
         else feed.get("generated_at")
     )
     FEED_PATH.write_text(json.dumps(feed, indent=2), encoding="utf-8")
+
+
+def _ensure_credentials() -> None:
+    missing = [env for env in REQUIRED_ENV_VARS if env not in os.environ]
+    if missing:
+        raise EnvironmentError(
+            "Missing QuantConnect credentials: " + ", ".join(missing) +
+            ". Set them before running process_innovation."
+        )
 
 
 if __name__ == "__main__":
