@@ -24,3 +24,4 @@
 - Added CLI helper `scripts/tooling/run_monthly_backtest.py` to trigger default Lean strategy with secure env vars.
 - Captured continuous innovation plan (Innovation Scout agent, research feed ingestion, Lean compile CI) across architecture and roadmap.
 - Innovation Scout assets seeded (sources config, research feed server, workflow) plus Lean dry-run CI workflow and script.
+- Updated PRD/architecture/roadmap to mandate anti-overfitting protocol, multi-regime validation, and chart-vision tooling.

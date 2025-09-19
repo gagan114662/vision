@@ -16,11 +16,14 @@
   - *KPI*: Zero critical compliance audit findings; incident MTTR < 30 minutes.
 - **G4**: Support continuous alpha innovation through evolutionary agent competitions.
   - *KPI*: At least one new candidate strategy per month passing validation gates.
+- **G5**: Ensure every deployed strategy demonstrates robustness beyond buy-and-hold through multi-regime validation and bias diagnostics.
+  - *KPI*: Three independent validation batteries (cross-validation, walk-forward, regime-specific) report consistent risk-adjusted returns; benchmark overlap < 5%.
 
 ## 3. Non-Goals
 - Synthetic data generation, simulated fills, or unverifiable claims.
 - Supporting asset classes without reliable data sources in the current phase.
 - Building bespoke broker execution until post paper-trading validation.
+- Approving strategies that materially replicate static buy-and-hold allocations or rely on untested discretionary overrides.
 
 ## 4. Functional Requirements
 1. **Data Acquisition & Management**
@@ -35,6 +38,7 @@
    - AlphaEvolve-inspired evolutionary loops generating, mutating, and evaluating strategies based on real data features.
    - Integration with QuantConnect Lean Docker CLI for backtesting and forward-walk validation.
    - Experiment tracker capturing configs, metrics, Git SHAs, and approvals.
+   - Robustness suite including k-fold cross-validation, rolling walk-forward tests, bootstrap resampling, and benchmark factor neutrality checks.
 4. **Execution & Risk**
    - Smart order routing MCP interface with latency budgets, venue scoring, and TCA feedback.
    - Risk Sentinel enforcing VaR/CVaR, exposure limits, liquidity constraints using historical stress events.
@@ -46,6 +50,7 @@
 6. **Human Oversight & UX**
    - Alpha Council review dashboards showing agent reasoning traces, data evidence, validation results.
    - Documentation agents maintaining living runbooks, change logs, risk registers.
+   - Visual analytics/"chart vision" tools enabling agents and humans to inspect price action, model overlays, and heatmaps.
 
 ## 5. User Stories
 - **Quant Researcher**: As a researcher, I submit a new strategy hypothesis grounded in the knowledge graph and receive validation, provenance, and Lean backtest results automatically.
@@ -57,7 +62,7 @@
 ## 6. Non-Functional Requirements
 - **Reliability**: 99.9% uptime for core MCP services; automated failover within 5 minutes.
 - **Security**: Secrets stored in hardware-backed vault; all inter-service comms encrypted and signed.
-- **Performance**: Research workflows return preliminary results < 2 hours; execution routing latency < 5ms at colocation.
+- **Performance**: Research workflows return preliminary results < 2 hours; execution routing latency < 5ms at colocation; Lean dry-run CI pass rate > 99%.
 - **Scalability**: Able to support 5x data volume and strategy count without re-architecture.
 - **Observability**: Full telemetry (metrics, logs, traces) with dashboards and alert thresholds.
 

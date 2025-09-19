@@ -24,6 +24,7 @@
 - Develop experiment tracker integration with provenance ledger.
 - Launch AlphaEvolve loop: mutation strategies, guardrail filtering, human review queue.
 - Add Lean compilation dry-run pipeline (docker build + `lean cloud backtest --dry-run`) to reduce runtime failures.
+- Implement robustness suite (cross-validation, walk-forward, bootstrap, benchmark neutrality) and visual analytics tooling.
 - Validation: first strategy candidate passing statistical gates (Sharpe > 1.3, Calmar > 1.0) and QA approval.
 
 ## Phase 4 — Risk, Compliance & Execution Hardening (Week 16-22)
@@ -31,7 +32,7 @@
 - Implement smart order routing simulation using real historical execution data.
 - Conduct red-team security drills, compliance walkthroughs.
 - Innovation Scout delivers at least two curated external strategies/tools evaluated by Strategy Lab.
-- Validation: compliance matrix coverage 100%; security findings resolved; mock SEV1 drill completed.
+- Validation: compliance matrix coverage 100%; security findings resolved; mock SEV1 drill completed; robustness suite demonstrates stability across three distinct market regimes.
 
 ## Phase 5 — Paper Trading & Monitoring (Week 22-28)
 - Initiate Lean paper trading with human oversight.

@@ -59,6 +59,11 @@
 - **Validation Pipeline**
   - Automated sequence: data integrity check → training/backtest (Lean) → statistical analysis (Sharpe, Calmar, drawdown) → factor exposure comparison → embargoed forward walk (Lean live/paper) → human review.
   - QA agent runs `*trace`, `*nfr`, `*review` macros at each stage.
+- **Robustness Engine**
+  - Executes k-fold cross-validation, rolling walk-forward analysis, and regime segmentation across bull/bear/sideways periods.
+  - Applies bootstrap resampling and Monte Carlo trade sequence shuffles to detect overfitting; automatically rejects strategies that converge toward buy-and-hold or exhibit instability.
+- **Visual Analytics**
+  - Chart rendering tools allow agents to generate annotated price/indicator overlays and share images with human reviewers for qualitative assessment.
 
 ## 6. Security & Compliance Design
 - **Zero-Trust Controls**
