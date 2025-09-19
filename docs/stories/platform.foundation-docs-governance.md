@@ -26,3 +26,4 @@
 - Innovation Scout assets seeded (sources config, research feed server, workflow) plus Lean dry-run CI workflow and script.
 - Updated PRD/architecture/roadmap to mandate anti-overfitting protocol, multi-regime validation, and chart-vision tooling.
 - Implemented robustness MCP (`strategy.validation.run_robustness`) and chart visualization tool, plus semtools/registry integration with expanded QA coverage (28 tests).
+- Added strategy validation workflow and innovation processing script linking research feed to backtests, robustness, and chart rendering.

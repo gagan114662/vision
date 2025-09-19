@@ -1,0 +1,58 @@
+nodes:
+  intake:
+    type: tool
+    tool: research.feed.list_insights
+    input:
+      status: ["pending-validation", "queued"]
+  select_candidate:
+    type: agent
+    agent: strategy_lab
+    input: intake.output
+    actions:
+      - choose_candidate_insight
+      - request_backtest_plan
+  run_backtest:
+    type: agent
+    agent: strategy_lab
+    input: select_candidate.output
+    actions:
+      - call_tool: market-data.pricing.get_ohlcv
+      - call_tool: feature-engineering.compute_factor
+      - call_tool: strategy.eval.run_backtest
+  evaluate_robustness:
+    type: agent
+    agent: qa_architect
+    input: run_backtest.output
+    actions:
+      - parse_returns
+      - call_tool: strategy.validation.run_robustness
+  visualize:
+    type: agent
+    agent: strategy_lab
+    input: evaluate_robustness.output
+    actions:
+      - call_tool: visualization.render_price_series
+  decision:
+    type: agent
+    agent: risk_sentinel
+    input: visualize.output
+    actions:
+      - assess_results
+      - produce_recommendation
+  escalation:
+    type: human
+    description: "Alpha Council reviews robustness package and charts"
+    input: decision.output
+transitions:
+  - from: intake
+    to: select_candidate
+  - from: select_candidate
+    to: run_backtest
+  - from: run_backtest
+    to: evaluate_robustness
+  - from: evaluate_robustness
+    to: visualize
+  - from: visualize
+    to: decision
+  - from: decision
+    to: escalation
