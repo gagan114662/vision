@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResearchFeedListResponse",
+  "type": "object",
+  "required": ["insights"],
+  "properties": {
+    "insights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "source_id",
+          "title",
+          "summary",
+          "provenance_url",
+          "category",
+          "impact_estimate",
+          "effort_estimate",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "id": {"type": "string"},
+          "source_id": {"type": "string"},
+          "title": {"type": "string"},
+          "summary": {"type": "string"},
+          "provenance_url": {"type": "string"},
+          "category": {"type": "string"},
+          "impact_estimate": {"type": "string"},
+          "effort_estimate": {"type": "string"},
+          "status": {"type": "string"},
+          "created_at": {"type": "string", "format": "date-time"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

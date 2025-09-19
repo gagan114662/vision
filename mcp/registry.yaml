@@ -51,6 +51,14 @@ namespaces:
         description: Produce compliance summary reports with control evidence.
         auth: rbac-token
         signing: optional
+  research:
+    tools:
+      - id: research.feed.list_insights
+        schema: schemas/tool.research.feed.list.schema.json
+        response_schema: schemas/tool.research.feed.list.response.schema.json
+        description: Retrieve curated innovation insights filtered by status/category.
+        auth: rbac-token
+        signing: optional
   qa:
     tools: []
   ops:

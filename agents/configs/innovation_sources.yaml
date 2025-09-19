@@ -1,0 +1,25 @@
+# Curated research sources for the Innovation Scout agent.
+- id: mql5-alphaevolve
+  type: article
+  name: "AlphaEvolve Agent Advances"
+  url: "https://www.mql5.com/en/articles/16686"
+  tags: ["strategy", "agentic", "alpha"]
+  review_cycle_days: 14
+- id: github-options-implied-prob
+  type: repository
+  name: "Options Implied Probability"
+  url: "https://github.com/tyrneh/options-implied-probability"
+  tags: ["options", "risk", "distribution"]
+  review_cycle_days: 7
+- id: github-deepresearch
+  type: repository
+  name: "Alibaba DeepResearch"
+  url: "https://github.com/Alibaba-NLP/DeepResearch"
+  tags: ["search", "retrieval", "innovation"]
+  review_cycle_days: 7
+- id: quantconnect-forums-runtime
+  type: forum
+  name: "QuantConnect Runtime Reliability Thread"
+  url: "https://www.quantconnect.com/forum/discussion/lean-runtime-stability"
+  tags: ["ops", "lean", "reliability"]
+  review_cycle_days: 3

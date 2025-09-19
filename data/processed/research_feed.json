@@ -1,0 +1,29 @@
+{
+  "generated_at": "2025-09-19T00:00:00Z",
+  "insights": [
+    {
+      "id": "insight-0001",
+      "source_id": "mql5-alphaevolve",
+      "title": "Agent-based Alpha Discovery Patterns",
+      "summary": "Highlights evolutionary optimization loops for trading agents leveraging dynamic prompt mutation and cross-agent debate.",
+      "provenance_url": "https://www.mql5.com/en/articles/16686",
+      "category": "strategy",
+      "impact_estimate": "high",
+      "effort_estimate": "medium",
+      "status": "pending-validation",
+      "created_at": "2025-09-19T00:00:00Z"
+    },
+    {
+      "id": "insight-0002",
+      "source_id": "github-options-implied-prob",
+      "title": "Options Implied Probability tooling",
+      "summary": "Open-source utilities for deriving implied probability distributions from option chains; useful for risk scenarios.",
+      "provenance_url": "https://github.com/tyrneh/options-implied-probability",
+      "category": "risk",
+      "impact_estimate": "medium",
+      "effort_estimate": "medium",
+      "status": "queued",
+      "created_at": "2025-09-19T00:00:00Z"
+    }
+  ]
+}

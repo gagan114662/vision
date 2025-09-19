@@ -1,0 +1,49 @@
+nodes:
+  fetch_sources:
+    type: tool
+    tool: research.feed.list_insights
+    input:
+      status: ["pending-validation", "queued"]
+  summarize:
+    type: agent
+    agent: innovation_scout
+    input: fetch_sources.output
+    actions:
+      - generate_summary
+      - classify_opportunity
+  validation_queue:
+    type: agent
+    agent: strategy_lab
+    input: summarize.output
+    actions:
+      - prioritize_experiments
+      - request_backtests
+  risk_compliance_review:
+    type: agent
+    agent: risk_sentinel
+    input: validation_queue.output
+    actions:
+      - assess_risk_impact
+      - notify_compliance
+  escalation:
+    type: human
+    description: "Alpha Council or human lead reviews recommended innovations before implementation"
+    input: risk_compliance_review.output
+  implement:
+    type: agent
+    agent: ops_sre
+    condition: escalation.approved
+    actions:
+      - schedule_ci_updates
+      - update_mcp_registry
+transitions:
+  - from: fetch_sources
+    to: summarize
+  - from: summarize
+    to: validation_queue
+  - from: validation_queue
+    to: risk_compliance_review
+  - from: risk_compliance_review
+    to: escalation
+  - from: escalation
+    to: implement

@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ResearchFeedListRequest",
+  "type": "object",
+  "properties": {
+    "status": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["pending-validation", "queued", "in-validation", "adopted", "rejected"]
+      }
+    },
+    "category": {
+      "type": "string",
+      "enum": ["strategy", "risk", "execution", "data", "ops"]
+    }
+  },
+  "additionalProperties": false
+}

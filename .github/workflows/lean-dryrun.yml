@@ -1,0 +1,23 @@
+name: Lean Dry Run
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # weekly Monday
+
+jobs:
+  lean-dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lean dry run
+        env:
+          QUANTCONNECT_USER_ID: ${{ secrets.QUANTCONNECT_USER_ID }}
+          QUANTCONNECT_API_TOKEN: ${{ secrets.QUANTCONNECT_API_TOKEN }}
+        run: |
+          scripts/ci/lean_dry_run.sh

@@ -24,6 +24,10 @@ REQUIRED_DOCS = [
     BASE_DIR / "mcp" / "registry.yaml",
     BASE_DIR / "lean" / "algorithms" / "monthly_universe_alpha.py",
     BASE_DIR / "lean" / "config" / "monthly_universe_alpha.json",
+    BASE_DIR / "agents" / "prompts" / "innovation_scout.md",
+    BASE_DIR / "agents" / "configs" / "innovation_sources.yaml",
+    BASE_DIR / "agents" / "workflows" / "innovation_scout.yaml",
+    BASE_DIR / "data" / "processed" / "research_feed.json",
 ]
 
 
@@ -146,6 +150,8 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("risk.limits.evaluate_portfolio", risk_tools)
         compliance_tools = [tool["id"] for tool in namespaces["compliance"].get("tools", [])]
         self.assertIn("compliance.generate_summary", compliance_tools)
+        research_tools = [tool["id"] for tool in namespaces.get("research", {}).get("tools", [])]
+        self.assertIn("research.feed.list_insights", research_tools)
 
     def test_run_backtest_schema_required_fields(self) -> None:
         schema_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.schema.json"
