@@ -16,16 +16,26 @@
    ```
 2. Ensure credentials are available at runtime (either environment variables or Docker secrets).
 3. Run the bundled monthly universe strategy:
-   ```bash
-   docker run --rm \
-     -e QUANTCONNECT_USER_ID \
-     -e QUANTCONNECT_API_TOKEN \
-     -v $(pwd)/lean:/Lean \
-     vision-lean \
-     lean backtest monthly_universe_alpha --config /Lean/config/monthly_universe_alpha.json --data-folder /Lean/data
-   ```
+ ```bash
+ docker run --rm \
+   -e QUANTCONNECT_USER_ID \
+   -e QUANTCONNECT_API_TOKEN \
+   -v $(pwd)/lean:/Lean \
+   vision-lean \
+   lean backtest monthly_universe_alpha --config /Lean/config/monthly_universe_alpha.json --data-folder /Lean/data
+ ```
 4. Capture output JSON and statistics to `lean/results/` with metadata (config hash, Git SHA).
 5. Expose commands through MCP wrapper `strategy.eval.run_backtest` for agent access.
+
+### CLI Helper
+- Script: `scripts/tooling/run_monthly_backtest.py`
+- Usage:
+  ```bash
+  export QUANTCONNECT_USER_ID=357130
+  export QUANTCONNECT_API_TOKEN=... # secure storage
+  python scripts/tooling/run_monthly_backtest.py
+  ```
+- Optional overrides: `--project`, `--algorithm-path`, `--config-path`, `--docker-image`, and `--param key=value`.
 
 ### Monthly Universe Alpha Strategy
 - **File**: `lean/algorithms/monthly_universe_alpha.py`
