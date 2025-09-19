@@ -44,3 +44,21 @@ initial_tools:
     latency_budget_ms: 1500
     provenance_required: true
     compliance_tags: ["compliance", "reporting"]
+  - name: research.feed.list_insights
+    description: Retrieve curated external research insights tagged by Innovation Scout.
+    cost_estimate: low
+    latency_budget_ms: 500
+    provenance_required: true
+    compliance_tags: ["innovation"]
+  - name: strategy.validation.run_robustness
+    description: Execute cross-validation, walk-forward, and bootstrap diagnostics on strategy returns.
+    cost_estimate: medium
+    latency_budget_ms: 1500
+    provenance_required: true
+    compliance_tags: ["model_validation", "risk"]
+  - name: visualization.render_price_series
+    description: Render annotated price/signal charts for human review and documentation.
+    cost_estimate: medium
+    latency_budget_ms: 2000
+    provenance_required: true
+    compliance_tags: ["visualization", "ux"]

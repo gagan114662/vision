@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RunRobustnessRequest",
+  "type": "object",
+  "required": ["returns"],
+  "properties": {
+    "returns": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 60,
+      "description": "Sequence of periodic returns." 
+    },
+    "folds": {
+      "type": "integer",
+      "minimum": 2,
+      "default": 3
+    },
+    "walk_forward_window": {
+      "type": "integer",
+      "minimum": 20,
+      "default": 60
+    },
+    "bootstrap_iterations": {
+      "type": "integer",
+      "minimum": 10,
+      "default": 100
+    },
+    "benchmark_returns": {
+      "type": "array",
+      "items": {"type": "number"}
+    }
+  },
+  "additionalProperties": false
+}

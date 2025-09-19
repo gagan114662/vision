@@ -35,6 +35,14 @@ namespaces:
         description: Execute Lean backtest inside Docker and return statistics summary.
         auth: rbac-token
         signing: required
+  strategy.validation:
+    tools:
+      - id: strategy.validation.run_robustness
+        schema: schemas/tool.strategy.validation.run_robustness.schema.json
+        response_schema: schemas/tool.strategy.validation.run_robustness.response.schema.json
+        description: Run cross-validation, walk-forward, and bootstrap diagnostics on strategy returns.
+        auth: rbac-token
+        signing: optional
   risk:
     tools:
       - id: risk.limits.evaluate_portfolio
@@ -57,6 +65,14 @@ namespaces:
         schema: schemas/tool.research.feed.list.schema.json
         response_schema: schemas/tool.research.feed.list.response.schema.json
         description: Retrieve curated innovation insights filtered by status/category.
+        auth: rbac-token
+        signing: optional
+  visualization:
+    tools:
+      - id: visualization.render_price_series
+        schema: schemas/tool.visualization.render_price_series.schema.json
+        response_schema: schemas/tool.visualization.render_price_series.response.schema.json
+        description: Render annotated price/signal charts for review and documentation.
         auth: rbac-token
         signing: optional
   qa:

@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RenderPriceSeriesRequest",
+  "type": "object",
+  "required": ["prices"],
+  "properties": {
+    "prices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "price"],
+        "properties": {
+          "timestamp": {"type": "string"},
+          "price": {"type": "number"}
+        },
+        "additionalProperties": false
+      },
+      "minItems": 2
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "label"],
+        "properties": {
+          "timestamp": {"type": "string"},
+          "label": {"type": "string"},
+          "value": {"type": "number"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "title": {"type": "string"}
+  },
+  "additionalProperties": false
+}

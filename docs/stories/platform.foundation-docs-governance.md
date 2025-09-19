@@ -25,3 +25,4 @@
 - Captured continuous innovation plan (Innovation Scout agent, research feed ingestion, Lean compile CI) across architecture and roadmap.
 - Innovation Scout assets seeded (sources config, research feed server, workflow) plus Lean dry-run CI workflow and script.
 - Updated PRD/architecture/roadmap to mandate anti-overfitting protocol, multi-regime validation, and chart-vision tooling.
+- Implemented robustness MCP (`strategy.validation.run_robustness`) and chart visualization tool, plus semtools/registry integration with expanded QA coverage (28 tests).

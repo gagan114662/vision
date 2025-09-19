@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RenderPriceSeriesResponse",
+  "type": "object",
+  "required": ["image_path"],
+  "properties": {
+    "image_path": {"type": "string"},
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": false
+}

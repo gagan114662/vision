@@ -77,6 +77,9 @@ class TestDocumentationIntegrity(unittest.TestCase):
             "strategy.eval.run_backtest",
             "risk.limits.evaluate_portfolio",
             "compliance.generate_summary",
+            "research.feed.list_insights",
+            "strategy.validation.run_robustness",
+            "visualization.render_price_series",
         }
         self.assertTrue(expected_tools.issubset(tool_names))
 
@@ -152,6 +155,10 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("compliance.generate_summary", compliance_tools)
         research_tools = [tool["id"] for tool in namespaces.get("research", {}).get("tools", [])]
         self.assertIn("research.feed.list_insights", research_tools)
+        validation_tools = [tool["id"] for tool in namespaces.get("strategy.validation", {}).get("tools", [])]
+        self.assertIn("strategy.validation.run_robustness", validation_tools)
+        visualization_tools = [tool["id"] for tool in namespaces.get("visualization", {}).get("tools", [])]
+        self.assertIn("visualization.render_price_series", visualization_tools)
 
     def test_run_backtest_schema_required_fields(self) -> None:
         schema_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.schema.json"
