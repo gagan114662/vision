@@ -19,7 +19,13 @@ initial_tools:
     cost_estimate: medium
     latency_budget_ms: 500
     provenance_required: true
-    compliance_tags: ["reg_scid" , "miFID"]
+    compliance_tags: ["reg_scid", "MiFID"]
+  - name: feature-engineering.compute_factor
+    description: Compute momentum/volatility/mean reversion factors from price series.
+    cost_estimate: low
+    latency_budget_ms: 800
+    provenance_required: true
+    compliance_tags: ["model_validation"]
   - name: strategy.eval.run_backtest
     description: Trigger QuantConnect Lean Docker backtest run.
     cost_estimate: high
@@ -31,4 +37,10 @@ initial_tools:
     cost_estimate: medium
     latency_budget_ms: 2000
     provenance_required: true
-    compliance_tags: ["risk" , "reg_scid"]
+    compliance_tags: ["risk", "reg_scid"]
+  - name: compliance.generate_summary
+    description: Produce compliance evidence summary for regulatory controls.
+    cost_estimate: low
+    latency_budget_ms: 1500
+    provenance_required: true
+    compliance_tags: ["compliance", "reporting"]

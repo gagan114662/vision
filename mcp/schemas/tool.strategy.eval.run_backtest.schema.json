@@ -2,19 +2,19 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RunBacktestRequest",
   "type": "object",
-  "required": ["project", "algorithm_path", "config_path"],
+  "required": [],
   "properties": {
     "project": {
       "type": "string",
-      "description": "Lean project name to execute."
+      "description": "Optional Lean project name; defaults to config file stem."
     },
     "algorithm_path": {
       "type": "string",
-      "description": "Path to the algorithm file (Python or C#)."
+      "description": "Path to the algorithm file (Python or C#); defaults to monthly universe alpha."
     },
     "config_path": {
       "type": "string",
-      "description": "Path to Lean configuration file."
+      "description": "Path to Lean configuration file; defaults to monthly_universe_alpha config."
     },
     "parameters": {
       "type": "object",
@@ -22,6 +22,10 @@
         "type": "string"
       },
       "description": "Optional parameter dictionary passed to Lean CLI."
+    },
+    "docker_image": {
+      "type": "string",
+      "description": "Docker image to use when running Lean; defaults to quantconnect/lean:latest."
     }
   },
   "additionalProperties": false

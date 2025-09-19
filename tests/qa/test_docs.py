@@ -22,6 +22,8 @@ REQUIRED_DOCS = [
     DOCS / "qa" / "assessments" / "platform.foundation-design-20250919.md",
     DOCS / "qa" / "gates" / "platform.foundation-qa-gate.yml",
     BASE_DIR / "mcp" / "registry.yaml",
+    BASE_DIR / "lean" / "algorithms" / "monthly_universe_alpha.py",
+    BASE_DIR / "lean" / "config" / "monthly_universe_alpha.json",
 ]
 
 
@@ -64,6 +66,15 @@ class TestDocumentationIntegrity(unittest.TestCase):
         for tool in initial_tools:
             with self.subTest(tool=tool.get("name")):
                 self.assertTrue(required_fields.issubset(tool.keys()), f"Tool missing required fields: {tool}")
+        tool_names = {tool["name"] for tool in initial_tools}
+        expected_tools = {
+            "market-data.pricing.get_ohlcv",
+            "feature-engineering.compute_factor",
+            "strategy.eval.run_backtest",
+            "risk.limits.evaluate_portfolio",
+            "compliance.generate_summary",
+        }
+        self.assertTrue(expected_tools.issubset(tool_names))
 
     def test_roadmap_covers_goals(self) -> None:
         roadmap = (BASE_DIR / "ROADMAP.md").read_text(encoding="utf-8")
@@ -140,8 +151,8 @@ class TestDocumentationIntegrity(unittest.TestCase):
         schema_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         self.assertEqual(schema.get("title"), "RunBacktestRequest")
-        required_fields = set(schema.get("required", []))
-        self.assertTrue({"project", "algorithm_path", "config_path"}.issubset(required_fields))
+        properties = schema.get("properties", {})
+        self.assertTrue({"project", "algorithm_path", "config_path", "parameters", "docker_image"}.issubset(properties.keys()))
 
         response_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.response.schema.json"
         response_schema = json.loads(response_path.read_text(encoding="utf-8"))
