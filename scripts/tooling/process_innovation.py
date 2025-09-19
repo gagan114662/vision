@@ -6,7 +6,11 @@ import argparse
 import json
 from pathlib import Path
 
+from datetime import datetime, timezone
+
 from mcp.servers import research_feed_server, robustness_server, chart_server
+
+FEED_PATH = Path("data/processed/research_feed.json")
 from mcp.wrappers import lean_backtest
 
 
@@ -38,6 +42,8 @@ def main() -> None:
     insight = insights[0]
     print(f"Processing insight {insight['id']} from {insight['source_id']}")
 
+    _update_insight(insight["id"], status="in-validation")
+
     backtest_result = lean_backtest.run_backtest(
         project=args.project,
         algorithm_path=args.algorithm,
@@ -66,6 +72,47 @@ def main() -> None:
         "title": f"{insight['id']} equity",
     })
     print("Chart saved to:", chart["image_path"])
+
+    status = "adopted" if robustness["verdict"] == "pass" else "queued"
+    if robustness["verdict"] == "fail":
+        status = "rejected"
+    _update_insight(
+        insight["id"],
+        status=status,
+        robustness=robustness,
+        chart_path=chart["image_path"],
+        backtest_stats=stats_path,
+    )
+
+
+def _update_insight(
+    insight_id: str,
+    *,
+    status: str | None = None,
+    robustness: dict | None = None,
+    chart_path: str | None = None,
+    backtest_stats: str | None = None,
+) -> None:
+    if not FEED_PATH.exists():
+        return
+    feed = json.loads(FEED_PATH.read_text(encoding="utf-8"))
+    for insight in feed.get("insights", []):
+        if insight.get("id") == insight_id:
+            if status is not None:
+                insight["status"] = status
+            if robustness is not None:
+                insight["robustness"] = robustness
+            if chart_path is not None:
+                insight["chart_path"] = chart_path
+            if backtest_stats is not None:
+                insight["backtest_statistics"] = backtest_stats
+            break
+    feed["generated_at"] = (
+        datetime.now(timezone.utc).isoformat()
+        if backtest_stats
+        else feed.get("generated_at")
+    )
+    FEED_PATH.write_text(json.dumps(feed, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

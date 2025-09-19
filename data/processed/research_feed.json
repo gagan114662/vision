@@ -1,4 +1,17 @@
 {
   "generated_at": "2025-09-19T00:00:00Z",
-  "insights": []
+  "insights": [
+    {
+      "id": "insight-1465633e",
+      "source_id": "github-options-implied-prob",
+      "title": "Implied probability integration",
+      "summary": "Use repo utilities to enrich risk scenarios",
+      "provenance_url": "https://github.com/tyrneh/options-implied-probability",
+      "category": "risk",
+      "impact_estimate": "high",
+      "effort_estimate": "medium",
+      "status": "queued",
+      "created_at": "2025-09-19T00:00:00Z"
+    }
+  ]
 }
