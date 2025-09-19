@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EvaluatePortfolioRequest",
+  "type": "object",
+  "required": ["positions", "limits"],
+  "properties": {
+    "positions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["symbol", "quantity", "price", "volatility"],
+        "properties": {
+          "symbol": {"type": "string"},
+          "quantity": {"type": "number"},
+          "price": {"type": "number"},
+          "volatility": {"type": "number", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "limits": {
+      "type": "object",
+      "required": ["max_drawdown", "var_limit", "exposure_limit"],
+      "properties": {
+        "max_drawdown": {"type": "number", "minimum": 0},
+        "var_limit": {"type": "number", "minimum": 0},
+        "exposure_limit": {"type": "number", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "confidence_level": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.95,
+      "description": "Confidence level for VaR calculation."
+    }
+  },
+  "additionalProperties": false
+}

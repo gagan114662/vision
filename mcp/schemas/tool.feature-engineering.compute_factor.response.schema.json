@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ComputeFactorResponse",
+  "type": "object",
+  "required": ["factor_name", "results", "window"],
+  "properties": {
+    "factor_name": {"type": "string"},
+    "window": {"type": "integer"},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "value"],
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "value": {"type": "number"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "provenance_ids": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": false
+}

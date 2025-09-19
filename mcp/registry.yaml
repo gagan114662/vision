@@ -11,6 +11,14 @@ namespaces:
         signing: required
   altdata:
     tools: []
+  feature-engineering:
+    tools:
+      - id: feature-engineering.compute_factor
+        schema: schemas/tool.feature-engineering.compute_factor.schema.json
+        response_schema: schemas/tool.feature-engineering.compute_factor.response.schema.json
+        description: Compute standard price-based factors with provenance tracking.
+        auth: rbac-token
+        signing: optional
   provenance:
     tools:
       - id: provenance.get_record
@@ -28,9 +36,21 @@ namespaces:
         auth: rbac-token
         signing: required
   risk:
-    tools: []
+    tools:
+      - id: risk.limits.evaluate_portfolio
+        schema: schemas/tool.risk.limits.evaluate_portfolio.schema.json
+        response_schema: schemas/tool.risk.limits.evaluate_portfolio.response.schema.json
+        description: Evaluate VaR, drawdown, and exposure against defined limits.
+        auth: rbac-token
+        signing: required
   compliance:
-    tools: []
+    tools:
+      - id: compliance.generate_summary
+        schema: schemas/tool.compliance.generate_summary.schema.json
+        response_schema: schemas/tool.compliance.generate_summary.response.schema.json
+        description: Produce compliance summary reports with control evidence.
+        auth: rbac-token
+        signing: optional
   qa:
     tools: []
   ops:

@@ -86,6 +86,56 @@ class TestDocumentationIntegrity(unittest.TestCase):
         response_required = set(response_schema.get("required", []))
         self.assertTrue({"record", "retrieved_at", "signature"}.issubset(response_required))
 
+    def test_feature_engineering_schema_required_fields(self) -> None:
+        schema_path = BASE_DIR / "mcp" / "schemas" / "tool.feature-engineering.compute_factor.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertEqual(schema.get("title"), "ComputeFactorRequest")
+        required_fields = set(schema.get("required", []))
+        self.assertTrue({"factor_name", "data"}.issubset(required_fields))
+
+        response_path = BASE_DIR / "mcp" / "schemas" / "tool.feature-engineering.compute_factor.response.schema.json"
+        response_schema = json.loads(response_path.read_text(encoding="utf-8"))
+        self.assertEqual(response_schema.get("title"), "ComputeFactorResponse")
+        response_required = set(response_schema.get("required", []))
+        self.assertTrue({"factor_name", "window", "results"}.issubset(response_required))
+
+    def test_risk_schema_required_fields(self) -> None:
+        schema_path = BASE_DIR / "mcp" / "schemas" / "tool.risk.limits.evaluate_portfolio.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertEqual(schema.get("title"), "EvaluatePortfolioRequest")
+        required_fields = set(schema.get("required", []))
+        self.assertTrue({"positions", "limits"}.issubset(required_fields))
+
+        response_path = BASE_DIR / "mcp" / "schemas" / "tool.risk.limits.evaluate_portfolio.response.schema.json"
+        response_schema = json.loads(response_path.read_text(encoding="utf-8"))
+        self.assertEqual(response_schema.get("title"), "EvaluatePortfolioResponse")
+        self.assertTrue({"portfolio_value", "var", "max_drawdown", "breaches", "recommendations"}.issubset(response_schema.get("required", [])))
+
+    def test_compliance_schema_required_fields(self) -> None:
+        schema_path = BASE_DIR / "mcp" / "schemas" / "tool.compliance.generate_summary.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertEqual(schema.get("title"), "GenerateComplianceSummaryRequest")
+        required_fields = set(schema.get("required", []))
+        self.assertTrue({"strategy_id", "controls", "evidence"}.issubset(required_fields))
+
+        response_path = BASE_DIR / "mcp" / "schemas" / "tool.compliance.generate_summary.response.schema.json"
+        response_schema = json.loads(response_path.read_text(encoding="utf-8"))
+        self.assertEqual(response_schema.get("title"), "GenerateComplianceSummaryResponse")
+        self.assertTrue({"strategy_id", "status", "report"}.issubset(response_schema.get("required", [])))
+
+    def test_registry_contains_new_tools(self) -> None:
+        registry = yaml.safe_load((BASE_DIR / "mcp" / "registry.yaml").read_text(encoding="utf-8"))
+        namespaces = registry.get("namespaces", {})
+        self.assertIn("feature-engineering", namespaces)
+        self.assertIn("risk", namespaces)
+        self.assertIn("compliance", namespaces)
+        feature_tools = [tool["id"] for tool in namespaces["feature-engineering"].get("tools", [])]
+        self.assertIn("feature-engineering.compute_factor", feature_tools)
+        risk_tools = [tool["id"] for tool in namespaces["risk"].get("tools", [])]
+        self.assertIn("risk.limits.evaluate_portfolio", risk_tools)
+        compliance_tools = [tool["id"] for tool in namespaces["compliance"].get("tools", [])]
+        self.assertIn("compliance.generate_summary", compliance_tools)
+
     def test_run_backtest_schema_required_fields(self) -> None:
         schema_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))

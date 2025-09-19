@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ComputeFactorRequest",
+  "type": "object",
+  "required": ["factor_name", "data"],
+  "properties": {
+    "factor_name": {
+      "type": "string",
+      "enum": ["momentum", "volatility", "mean_reversion"],
+      "description": "Name of the factor to compute."
+    },
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "price"],
+        "properties": {
+          "timestamp": {"type": "string", "format": "date-time"},
+          "price": {"type": "number"}
+        },
+        "additionalProperties": false
+      },
+      "description": "Ordered price observations used to compute the factor."
+    },
+    "window": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Optional rolling window size (defaults depend on factor)."
+    }
+  },
+  "additionalProperties": false
+}

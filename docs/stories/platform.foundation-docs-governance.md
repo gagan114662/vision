@@ -19,3 +19,4 @@
 - Added agent prompts and Meta-Supervisor workflow scaffolding for BMad-aligned orchestration.
 - Extended MCP registry with market data and backtest schemas; QA tests updated accordingly.
 - Hardened provenance MCP server with signed responses and extended unit tests verifying HMAC signatures.
+- Extended MCP coverage with feature engineering, risk, and compliance servers plus schemas and tests; local suite expanded to 21 tests.

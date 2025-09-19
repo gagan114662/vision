@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GenerateComplianceSummaryResponse",
+  "type": "object",
+  "required": ["strategy_id", "report", "status"],
+  "properties": {
+    "strategy_id": {"type": "string"},
+    "status": {"type": "string", "enum": ["PASS", "CONCERNS", "FAIL"]},
+    "report": {
+      "type": "object",
+      "required": ["controls", "evidence", "outstanding_risks", "next_actions"],
+      "properties": {
+        "controls": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["control", "status", "provenance_id"],
+            "properties": {
+              "control": {"type": "string"},
+              "status": {"type": "string"},
+              "provenance_id": {"type": "string"},
+              "notes": {"type": "string"}
+            },
+            "additionalProperties": false
+          }
+        },
+        "outstanding_risks": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "next_actions": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
