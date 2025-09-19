@@ -18,3 +18,4 @@
 - Added CI workflow and registry/schema coverage to QA tests; full suite passing locally.
 - Added agent prompts and Meta-Supervisor workflow scaffolding for BMad-aligned orchestration.
 - Extended MCP registry with market data and backtest schemas; QA tests updated accordingly.
+- Hardened provenance MCP server with signed responses and extended unit tests verifying HMAC signatures.

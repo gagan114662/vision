@@ -1,11 +1,17 @@
-"""Unit tests for provenance MCP server stub."""
+"""Unit tests for provenance MCP server."""
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
 import types
 import unittest
 from datetime import datetime, timezone
 from typing import Any, Dict
 from unittest.mock import patch
+
+import os
 
 import mcp.servers.provenance_server as provenance_server
 
@@ -31,6 +37,8 @@ class _Value:
 
 class ProvenanceServerTests(unittest.TestCase):
     def setUp(self) -> None:
+        self.env_patch = patch.dict(os.environ, {"PROVENANCE_SIGNING_KEY": "super-secret"})
+        self.env_patch.start()
         self.config_patch = patch.object(
             provenance_server.ProvenanceServerConfig,
             "from_env",
@@ -45,6 +53,7 @@ class ProvenanceServerTests(unittest.TestCase):
         self.config_patch.start()
 
     def tearDown(self) -> None:
+        self.env_patch.stop()
         self.config_patch.stop()
 
     def test_get_record_success(self) -> None:
@@ -65,7 +74,13 @@ class ProvenanceServerTests(unittest.TestCase):
         }
         result = types.SimpleNamespace(rows=[types.SimpleNamespace(values=row_values)])
 
-        with patch.object(provenance_server, "_connect", return_value=types.SimpleNamespace(sqlQuery=lambda _query: result)):
+        class DummyClient:
+            def sql_query(self, query: str, params: Dict[str, Any]):
+                self.query = query
+                self.params = params
+                return result
+
+        with patch.object(provenance_server, "_connect", return_value=DummyClient()):
             response = provenance_server.get_record({"record_id": "abc"})
 
         self.assertIn("record", response)
@@ -76,10 +91,28 @@ class ProvenanceServerTests(unittest.TestCase):
         self.assertEqual(record["lineage_parent_ids"], ["parent1", "parent2"])
         self.assertEqual(record["regulatory_tags"], ["MiFID", "SEC"])
         self.assertIn("retrieved_at", response)
+        self.assertIn("signature", response)
+
+        payload = {
+            "record": record,
+            "retrieved_at": response["retrieved_at"],
+        }
+        expected_signature = base64.b64encode(
+            hmac.new(
+                b"super-secret",
+                json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8"),
+                hashlib.sha256,
+            ).digest()
+        ).decode("ascii")
+        self.assertEqual(response["signature"], expected_signature)
 
     def test_get_record_not_found(self) -> None:
         result = types.SimpleNamespace(rows=[])
-        with patch.object(provenance_server, "_connect", return_value=types.SimpleNamespace(sqlQuery=lambda _query: result)):
+        class DummyClient:
+            def sql_query(self, query: str, params: Dict[str, Any]):
+                return result
+
+        with patch.object(provenance_server, "_connect", return_value=DummyClient()):
             with self.assertRaises(ValueError):
                 provenance_server.get_record({"record_id": "missing"})
 

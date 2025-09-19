@@ -80,6 +80,12 @@ class TestDocumentationIntegrity(unittest.TestCase):
         expected = {"record_id", "source_id", "source_type", "ingested_at", "qc_score", "validation_notes", "hash", "data_location"}
         self.assertTrue(expected.issubset(required_fields), "Provenance schema missing required fields")
 
+        response_path = BASE_DIR / "mcp" / "schemas" / "tool.provenance.get_record.response.schema.json"
+        response_schema = json.loads(response_path.read_text(encoding="utf-8"))
+        self.assertEqual(response_schema.get("title"), "ProvenanceGetRecordResponse")
+        response_required = set(response_schema.get("required", []))
+        self.assertTrue({"record", "retrieved_at", "signature"}.issubset(response_required))
+
     def test_run_backtest_schema_required_fields(self) -> None:
         schema_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
