@@ -1,0 +1,8 @@
+# Ops tooling metadata for terminal access.
+tools:
+  - name: ops.shell.run_command
+    description: Guarded terminal command executor routed through Ally when available.
+    cost_estimate: medium
+    latency_budget_ms: 5000
+    provenance_required: true
+    compliance_tags: ["ops", "shell", "audit"]

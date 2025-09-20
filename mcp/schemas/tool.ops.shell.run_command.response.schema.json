@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpsShellRunCommandResponse",
+  "type": "object",
+  "required": [
+    "command",
+    "executor",
+    "stdout",
+    "stderr",
+    "exit_code",
+    "timed_out",
+    "start_time",
+    "end_time",
+    "duration_seconds",
+    "workdir"
+  ],
+  "properties": {
+    "command": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "executor": {
+      "type": "string",
+      "description": "Execution backend used (ally, subprocess, dry_run)."
+    },
+    "stdout": {
+      "type": "string"
+    },
+    "stderr": {
+      "type": "string"
+    },
+    "exit_code": {
+      "type": ["integer", "null"],
+      "description": "Process exit code when executed."
+    },
+    "timed_out": {
+      "type": "boolean"
+    },
+    "start_time": {
+      "type": ["string", "null"],
+      "description": "UTC ISO8601 start timestamp."
+    },
+    "end_time": {
+      "type": ["string", "null"],
+      "description": "UTC ISO8601 end timestamp."
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "workdir": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

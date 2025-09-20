@@ -184,7 +184,13 @@ namespaces:
   qa:
     tools: []
   ops:
-    tools: []
+    tools:
+      - id: ops.shell.run_command
+        schema: schemas/tool.ops.shell.run_command.schema.json
+        response_schema: schemas/tool.ops.shell.run_command.response.schema.json
+        description: Execute guarded shell commands via Ally-compatible executor.
+        auth: privileged-token
+        signing: required
 metadata:
   default_verbosity: concise
   verbose_threshold: 0.7

@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpsShellRunCommandRequest",
+  "type": "object",
+  "required": ["command"],
+  "properties": {
+    "command": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1,
+      "maxItems": 32,
+      "description": "Command tokens to execute (no shell interpolation)."
+    },
+    "workdir": {
+      "type": "string",
+      "description": "Working directory (must reside inside repository root)."
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "description": "Additional environment variables for the command."
+    },
+    "timeout_seconds": {
+      "type": "number",
+      "default": 30.0,
+      "minimum": 0.1,
+      "maximum": 600.0,
+      "description": "Maximum number of seconds before the command is terminated."
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, do not execute the command, only return metadata."
+    },
+    "use_ally": {
+      "type": "boolean",
+      "default": true,
+      "description": "Attempt to route via Ally CLI when available."
+    }
+  },
+  "additionalProperties": false
+}
