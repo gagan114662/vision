@@ -29,5 +29,6 @@
 - Added strategy validation workflow and innovation processing script linking research feed to backtests, robustness, and chart rendering.
 - Added lean dry-run runbook and upgraded innovation processor to enforce credential checks and feed status updates.
 - Added QuantConnect MCP integration blueprint, schemas, registry entries, and stubs pending upstream server vendoring.
+- Documented vendor procedure for QuantConnect MCP server (`integrations/quantconnect_mcp/README.md`) so upstream repo can be cloned into workspace.
 - Added tool enhancement backlog from `tooly.md` to upcoming to-do (LlamaIndex semtools, framework evaluation, registry/tooling patterns).
 - Implemented semtools MCP stubs (parse/search) with CLI wrappers and tests for document intelligence workflows.

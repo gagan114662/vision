@@ -9,7 +9,11 @@ This directory captures integration steps for wiring the official [QuantConnect 
 
 ## Required Steps
 1. **Vendor the Server**
-   - Clone or vendor `QuantConnect/mcp-server` into `integrations/quantconnect_mcp/vendor/` (git submodule or manual tarball).
+   - Clone `QuantConnect/mcp-server` into `integrations/quantconnect_mcp/vendor/` (submodule or regular clone).
+     ```bash
+     cd integrations/quantconnect_mcp
+     git clone https://github.com/QuantConnect/mcp-server vendor
+     ```
    - Follow upstream instructions for installing dependencies (`pip install -r requirements.txt`).
 
 2. **Configuration**
