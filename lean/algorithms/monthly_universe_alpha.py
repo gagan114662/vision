@@ -83,12 +83,12 @@ class MonthlyUniverseAlpha(QCAlgorithm):
         scores: Dict[Symbol, float] = {}
         history_period = 252
         for symbol in list(self.active.keys()):
-        history = self.History(symbol, history_period, Resolution.Daily)
-        if history.empty:
-            continue
-        close = self._extract_close_series(history)
-        close = close.dropna()
-            if len(close) < 60:
+            history = self.History(symbol, history_period, Resolution.Daily)
+            if history.empty:
+                continue
+            close = self._extract_close_series(history)
+            close = close.dropna()
+            if len(close) < 63:  # Need at least 63 data points for momentum calculation
                 continue
             momentum = close.iloc[-1] / close.iloc[-63] - 1  # 3-month momentum
             daily_returns = close.pct_change().dropna()
