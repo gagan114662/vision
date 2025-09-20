@@ -1,0 +1,26 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuantConnectProjectSyncRequest",
+  "type": "object",
+  "required": ["project_id"],
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "QuantConnect cloud project ID or name."
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "content"],
+        "properties": {
+          "path": {"type": "string"},
+          "content": {"type": "string"}
+        },
+        "additionalProperties": false
+      },
+      "description": "Optional list of files to push to the project."
+    }
+  },
+  "additionalProperties": false
+}

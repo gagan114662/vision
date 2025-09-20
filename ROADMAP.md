@@ -18,6 +18,7 @@
 - Author LangGraph workflows for Strategy Lab, Data Edge, Risk Sentinel, QA.
 - Introduce Innovation Scout agent monitoring external research feeds with provenance logging.
 - Validation: tool routing accuracy > 90% on test corpus; signed responses enforced; research feed ingestion operating with daily updates.
+- Incorporate tool augmentation backlog (see `tooly.md`): evaluate semtools for document intelligence, benchmark LangGraph/CrewAI/Semantic Kernel, and design registry-driven tool discovery patterns.
 
 ## Phase 3 — Lean Backtesting & Evolutionary Loop (Week 10-16)
 - Containerize Lean environment; automate backtests via MCP.

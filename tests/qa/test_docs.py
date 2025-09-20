@@ -28,6 +28,7 @@ REQUIRED_DOCS = [
     BASE_DIR / "agents" / "configs" / "innovation_sources.yaml",
     BASE_DIR / "agents" / "workflows" / "innovation_scout.yaml",
     BASE_DIR / "data" / "processed" / "research_feed.json",
+    BASE_DIR / "integrations" / "quantconnect_mcp" / "README.md",
 ]
 
 
@@ -80,6 +81,9 @@ class TestDocumentationIntegrity(unittest.TestCase):
             "research.feed.list_insights",
             "strategy.validation.run_robustness",
             "visualization.render_price_series",
+            "quantconnect.project.sync",
+            "quantconnect.backtest.run",
+            "quantconnect.backtest.status",
         }
         self.assertTrue(expected_tools.issubset(tool_names))
 
@@ -159,6 +163,12 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertIn("strategy.validation.run_robustness", validation_tools)
         visualization_tools = [tool["id"] for tool in namespaces.get("visualization", {}).get("tools", [])]
         self.assertIn("visualization.render_price_series", visualization_tools)
+        quantconnect_tools = [tool["id"] for tool in namespaces.get("quantconnect", {}).get("tools", [])]
+        self.assertTrue({
+            "quantconnect.project.sync",
+            "quantconnect.backtest.run",
+            "quantconnect.backtest.status"
+        }.issubset(quantconnect_tools))
 
     def test_run_backtest_schema_required_fields(self) -> None:
         schema_path = BASE_DIR / "mcp" / "schemas" / "tool.strategy.eval.run_backtest.schema.json"

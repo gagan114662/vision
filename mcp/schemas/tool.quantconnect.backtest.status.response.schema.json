@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuantConnectBacktestStatusResponse",
+  "type": "object",
+  "required": ["project_id", "backtest_id", "status"],
+  "properties": {
+    "project_id": {"type": "string"},
+    "backtest_id": {"type": "string"},
+    "status": {"type": "string"},
+    "statistics": {
+      "type": "object",
+      "additionalProperties": {"type": ["number", "string"]}
+    }
+  },
+  "additionalProperties": false
+}

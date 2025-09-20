@@ -11,6 +11,7 @@
 4. **Lean Wrapper**: Implement MCP wrapper for QuantConnect Lean CLI (`strategy.eval.run_backtest`, `strategy.eval.get_results`).
 5. **QA Automation**: Define QA macros as MCP tools enabling scripted invocation (e.g., `qa.run_gate`).
 6. **Security**: Enforce signed JWT payloads and RBAC tokens for each tool call; integrate with secrets vault.
+7. **QuantConnect MCP Integration**: Vendor the official QuantConnect MCP server, expose project sync/backtest/live tools, and secure QC credentials via vault/secret management.
 
 ## Tool Namespace Overview
 - `market-data.*` — price, volume, order book, fundamentals.

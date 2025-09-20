@@ -75,6 +75,26 @@ namespaces:
         description: Render annotated price/signal charts for review and documentation.
         auth: rbac-token
         signing: optional
+  quantconnect:
+    tools:
+      - id: quantconnect.project.sync
+        schema: schemas/tool.quantconnect.project.sync.schema.json
+        response_schema: schemas/tool.quantconnect.project.sync.response.schema.json
+        description: Sync local files with a QuantConnect cloud project via MCP (stub until upstream integration).
+        auth: rbac-token
+        signing: optional
+      - id: quantconnect.backtest.run
+        schema: schemas/tool.quantconnect.backtest.run.schema.json
+        response_schema: schemas/tool.quantconnect.backtest.run.response.schema.json
+        description: Trigger QuantConnect cloud backtest (stub).
+        auth: rbac-token
+        signing: optional
+      - id: quantconnect.backtest.status
+        schema: schemas/tool.quantconnect.backtest.status.schema.json
+        response_schema: schemas/tool.quantconnect.backtest.status.response.schema.json
+        description: Retrieve QuantConnect backtest status/statistics (stub).
+        auth: rbac-token
+        signing: optional
   qa:
     tools: []
   ops:

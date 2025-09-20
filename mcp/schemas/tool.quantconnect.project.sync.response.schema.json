@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuantConnectProjectSyncResponse",
+  "type": "object",
+  "required": ["project_id", "synced_files"],
+  "properties": {
+    "project_id": {"type": "string"},
+    "synced_files": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": false
+}

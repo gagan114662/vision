@@ -62,3 +62,21 @@ initial_tools:
     latency_budget_ms: 2000
     provenance_required: true
     compliance_tags: ["visualization", "ux"]
+  - name: quantconnect.project.sync
+    description: Sync local strategy files to a QuantConnect cloud project via MCP (stub until server vendored).
+    cost_estimate: medium
+    latency_budget_ms: 3000
+    provenance_required: true
+    compliance_tags: ["quantconnect", "deployment"]
+  - name: quantconnect.backtest.run
+    description: Trigger QuantConnect cloud backtest for a project (stub until server vendored).
+    cost_estimate: high
+    latency_budget_ms: 600000
+    provenance_required: true
+    compliance_tags: ["quantconnect", "model_validation"]
+  - name: quantconnect.backtest.status
+    description: Poll QuantConnect cloud backtest status and retrieve statistics (stub until server vendored).
+    cost_estimate: low
+    latency_budget_ms: 2000
+    provenance_required: true
+    compliance_tags: ["quantconnect", "model_validation"]

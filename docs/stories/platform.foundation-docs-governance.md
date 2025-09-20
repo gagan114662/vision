@@ -28,3 +28,5 @@
 - Implemented robustness MCP (`strategy.validation.run_robustness`) and chart visualization tool, plus semtools/registry integration with expanded QA coverage (28 tests).
 - Added strategy validation workflow and innovation processing script linking research feed to backtests, robustness, and chart rendering.
 - Added lean dry-run runbook and upgraded innovation processor to enforce credential checks and feed status updates.
+- Added QuantConnect MCP integration blueprint, schemas, registry entries, and stubs pending upstream server vendoring.
+- Added tool enhancement backlog from `tooly.md` to upcoming to-do (LlamaIndex semtools, framework evaluation, registry/tooling patterns).
