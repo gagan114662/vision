@@ -27,10 +27,22 @@ from agents.core.orchestrator import (
     OrchestrationPhase, AgentConsensus
 )
 from agents.core import AgentRole
-from agents.implementations.fundamental_agent import FundamentalAgent
-from agents.implementations.technical_agent import TechnicalAgent
-from agents.implementations.sentiment_agent import SentimentAgent
-from agents.implementations.quantitative_agent import QuantitativeAgent
+
+# Try to import full agents, fallback to simple ones if dependencies missing
+try:
+    from agents.implementations.fundamental_agent import FundamentalAgent
+    from agents.implementations.technical_agent import TechnicalAgent
+    from agents.implementations.sentiment_agent import SentimentAgent
+    from agents.implementations.quantitative_agent import QuantitativeAgent
+    print("✓ Using full agent implementations")
+except ImportError as e:
+    print(f"⚠️ Full agents unavailable ({e}), using simplified implementations")
+    from agents.implementations.simple_agents import (
+        SimpleFundamentalAgent as FundamentalAgent,
+        SimpleTechnicalAgent as TechnicalAgent,
+        SimpleSentimentAgent as SentimentAgent,
+        SimpleQuantitativeAgent as QuantitativeAgent
+    )
 
 
 class RealOrchestrationDemo:
