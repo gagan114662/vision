@@ -68,6 +68,12 @@ initial_tools:
     latency_budget_ms: 1000
     provenance_required: true
     compliance_tags: ["signal_processing"]
+  - name: signal.filter.adaptive_noise_reduction
+    description: Volatility-aware exponential smoothing for noise suppression.
+    cost_estimate: low
+    latency_budget_ms: 800
+    provenance_required: true
+    compliance_tags: ["signal_processing"]
   - name: quantconnect.project.sync
     description: Sync local strategy files to a QuantConnect cloud project via MCP (stub until server vendored).
     cost_estimate: medium

@@ -7,7 +7,7 @@ Accelerate tool capabilities by implementing the improvements catalogued in `too
 
 ### 1. Document Intelligence (semtools)
 - [x] Wrap `semtools parse` & `semtools search` as MCP tools (done).
-- [ ] Add semantic chunking + Markdown-to-JSON parser for parsed docs.
+- [x] Add semantic chunking + Markdown-to-JSON parser for parsed docs (structured output flag).
 - [ ] Cache parse/search outputs for large corpora.
 - [ ] Add tooling to annotate results (highlight keywords, sentiment tagging).
 
@@ -22,8 +22,8 @@ Accelerate tool capabilities by implementing the improvements catalogued in `too
 - [ ] Add observability dashboard for tool-level latency + cost metrics.
 
 ### 4. Math & Signal Tools
-- [ ] Hidden Markov Model regime detector (HMM) tool namespace (`strategy.regime.*`).
-- [ ] Ornstein–Uhlenbeck parameter estimator (`strategy.meanreversion.*`).
+- [x] Hidden Markov Model regime detector (HMM) tool namespace (`strategy.regime.*`).
+- [x] Ornstein–Uhlenbeck parameter estimator (`strategy.meanreversion.*`).
 - [ ] Fourier/wavelet signal processing toolkit (`signal.*`).
 
 ### 5. Alternative Data

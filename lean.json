@@ -1,0 +1,7 @@
+{
+  "environment": "backtesting",
+  "data-folder": "data",
+  "results-folder": "lean/results",
+  "storage-folder": "lean/storage",
+  "api": {}
+}

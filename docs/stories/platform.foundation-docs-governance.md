@@ -36,3 +36,4 @@
 - Shipped Hidden Markov Model regime detection tool (`strategy.regime.detect_states`) with MCP schema, server wrapper, and unit tests (requires hmmlearn when enabled).
 - Added Ornstein-Uhlenbeck mean reversion parameter estimator (`strategy.meanreversion.estimate_parameters`) with MCP schemas, server implementation, and tests.
 - Enhanced semtools parse tool to optionally return structured markdown sections for downstream agents.
+- Added Fourier cycle detection tool (`signal.fourier.detect_cycles`) with schemas, server implementation, and tests (returns dominant frequencies/amplitudes via FFT).

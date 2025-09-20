@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalFilterAdaptiveNoiseReductionResponse",
+  "type": "object",
+  "required": ["smoothed", "effective_alpha", "residual"],
+  "properties": {
+    "smoothed": {
+      "type": "array",
+      "items": {"type": "number"},
+      "description": "Denoised series aligned to the input."
+    },
+    "effective_alpha": {
+      "type": "array",
+      "items": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+      "description": "Adaptive smoothing gain per observation."
+    },
+    "residual": {
+      "type": "array",
+      "items": {"type": "number"},
+      "description": "Original minus smoothed values."
+    },
+    "noise_reduction": {
+      "type": ["number", "null"],
+      "description": "Fractional reduction in short-term noise (1 = full)."
+    }
+  },
+  "additionalProperties": false
+}

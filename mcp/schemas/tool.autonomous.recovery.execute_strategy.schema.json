@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "required": ["package_name", "strategy"],
+  "properties": {
+    "package_name": {
+      "type": "string",
+      "description": "Name of the Python package to install using recovery strategy"
+    },
+    "strategy": {
+      "type": "string",
+      "enum": [
+        "standard_pip",
+        "pip_no_cache",
+        "pip_force_reinstall",
+        "pip_user_install",
+        "pip_in_venv",
+        "build_from_source",
+        "conda_installation",
+        "scipy_first",
+        "homebrew_dependencies",
+        "apt_dependencies"
+      ],
+      "description": "Specific recovery strategy to execute"
+    },
+    "verify_installation": {
+      "type": "boolean",
+      "description": "Whether to verify the package can be imported after installation",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

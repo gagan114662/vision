@@ -51,10 +51,13 @@ class ProvenanceServerTests(unittest.TestCase):
             ),
         )
         self.config_patch.start()
+        self.ensure_patch = patch.object(provenance_server, "_ensure_immudb", return_value=None)
+        self.ensure_patch.start()
 
     def tearDown(self) -> None:
         self.env_patch.stop()
         self.config_patch.stop()
+        self.ensure_patch.stop()
 
     def test_get_record_success(self) -> None:
         timestamp = datetime(2025, 1, 1, tzinfo=timezone.utc)

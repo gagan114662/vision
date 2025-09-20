@@ -3,14 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-try:
-    from mcp.server import register_tool
-except ImportError:  # pragma: no cover
-    def register_tool(*_args: Any, **_kwargs: Any):  # type: ignore
-        def decorator(func: Any) -> Any:
-            return func
-
-        return decorator
+from mcp.server import register_tool
 
 
 _STATUS_SEVERITY = {"PASS": 0, "WAIVED": 1, "CONCERNS": 2, "FAIL": 3}

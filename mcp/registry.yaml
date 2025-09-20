@@ -67,6 +67,14 @@ namespaces:
         description: Identify dominant cycles via FFT for time-series analysis.
         auth: rbac-token
         signing: optional
+  signal.filter:
+    tools:
+      - id: signal.filter.adaptive_noise_reduction
+        schema: schemas/tool.signal.filter.adaptive_noise_reduction.schema.json
+        response_schema: schemas/tool.signal.filter.adaptive_noise_reduction.response.schema.json
+        description: Adaptive exponential smoothing driven by volatility estimates.
+        auth: rbac-token
+        signing: optional
   signal.wavelet:
     tools:
       - id: signal.wavelet.multiscale_decomposition

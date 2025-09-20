@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "include_cached": {
+      "type": "boolean",
+      "description": "Whether to return cached diagnostics if available (within 5 minutes)",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

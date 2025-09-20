@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalFilterAdaptiveNoiseReductionRequest",
+  "type": "object",
+  "required": ["series"],
+  "properties": {
+    "series": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 16,
+      "description": "Raw time-ordered values to denoise."
+    },
+    "window": {
+      "type": "integer",
+      "minimum": 2,
+      "maximum": 256,
+      "default": 10,
+      "description": "Lookback window for volatility estimation."
+    },
+    "min_alpha": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.1,
+      "description": "Lower bound on smoothing gain (more smoothing)."
+    },
+    "max_alpha": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.6,
+      "description": "Upper bound on smoothing gain (less smoothing)."
+    }
+  },
+  "additionalProperties": false
+}

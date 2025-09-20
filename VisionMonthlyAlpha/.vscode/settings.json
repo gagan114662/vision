@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "/Users/gagan/.venvs/lean-cli/bin/python3.13",
+    "python.languageServer": "Pylance"
+}

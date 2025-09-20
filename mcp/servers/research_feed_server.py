@@ -5,14 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-try:
-    from mcp.server import register_tool
-except ImportError:  # pragma: no cover
-    def register_tool(*_args: Any, **_kwargs: Any):  # type: ignore
-        def decorator(func: Any) -> Any:
-            return func
-
-        return decorator
+from mcp.server import register_tool
 
 FEED_PATH = Path("data/processed/research_feed.json")
 

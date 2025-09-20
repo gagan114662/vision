@@ -13,20 +13,42 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, Protocol
 
-try:
-    from mcp.server import register_tool
-except ImportError:  # pragma: no cover - requires MCP runtime
-    def register_tool(*_args: Any, **_kwargs: Any):  # type: ignore
-        def decorator(func: Any) -> Any:
-            return func
+from mcp.server import register_tool
 
-        return decorator
+# Autonomous dependency management for pyimmudb
+def _ensure_immudb():
+    """Ensure pyimmudb is available, auto-installing and retrying until success."""
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            from pyimmudb.client import ImmuClient
+            print("✅ ImmuDB client verified and ready")
+            return ImmuClient
+        except ImportError:
+            if attempt < max_attempts - 1:
+                print(f"🔧 Auto-installing pyimmudb (attempt {attempt + 1}/{max_attempts})")
+                import subprocess
+                import sys
 
-try:
-    from pyimmudb.client import ImmuClient  # type: ignore
-except ImportError:  # pragma: no cover - optional dependency for tests
-    ImmuClient = Any  # type: ignore
+                install_strategies = [
+                    [sys.executable, "-m", "pip", "install", "pyimmudb"],
+                    [sys.executable, "-m", "pip", "install", "pyimmudb", "--no-cache-dir"],
+                    [sys.executable, "-m", "pip", "install", "pyimmudb", "--force-reinstall"]
+                ]
 
+                for strategy in install_strategies:
+                    try:
+                        subprocess.check_call(strategy, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                        print("✅ PyImmuDB installation completed")
+                        from pyimmudb.client import ImmuClient
+                        print("✅ PyImmuDB successfully imported")
+                        return ImmuClient
+                    except (subprocess.CalledProcessError, ImportError):
+                        continue
+            else:
+                raise RuntimeError(f"Unable to install pyimmudb after {max_attempts} attempts. Please check system permissions and internet connectivity.")
+
+    raise RuntimeError("Unexpected error in pyimmudb dependency resolution")
 
 class _ImmuRowValues(Protocol):  # pragma: no cover - structural typing only
     def get(self, key: str, default: Any | None = None) -> Any:
@@ -56,8 +78,9 @@ class ProvenanceServerConfig:
         )
 
 
-def _connect(config: ProvenanceServerConfig) -> ImmuClient:
-    client = ImmuClient((config.host, config.port))
+def _connect(config: ProvenanceServerConfig):
+    client_cls = _ensure_immudb()
+    client = client_cls((config.host, config.port))
     client.login(config.user, config.password)
     client.useDatabase(config.database.encode())
     return client

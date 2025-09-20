@@ -6,14 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, Iterable, List
 
-try:
-    from mcp.server import register_tool
-except ImportError:  # pragma: no cover
-    def register_tool(*_args: Any, **_kwargs: Any):  # type: ignore
-        def decorator(func: Any) -> Any:
-            return func
-
-        return decorator
+from mcp.server import register_tool
 
 
 @dataclass

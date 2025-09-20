@@ -1,0 +1,56 @@
+name: Semtools Integration Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1'  # weekly Monday
+
+jobs:
+  semtools-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "${{ secrets.LLAMA_CLOUD_API_KEY }}" ]; then
+            echo "ERROR: LLAMA_CLOUD_API_KEY secret is not configured"
+            exit 1
+          fi
+          # Validate API key format (must be at least 40 characters)
+          if [ ${#{{ secrets.LLAMA_CLOUD_API_KEY }}} -lt 40 ]; then
+            echo "ERROR: LLAMA_CLOUD_API_KEY must be at least 40 characters"
+            exit 1
+          fi
+          echo "✓ LlamaCloud API key validated"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install llama-index-readers-file[semtools]
+
+      - name: Test semtools CLI availability
+        run: |
+          semtools --version
+
+      - name: Test semtools MCP server
+        env:
+          LLAMA_CLOUD_API_KEY: ${{ secrets.LLAMA_CLOUD_API_KEY }}
+        run: |
+          python -c "
+          import sys
+          sys.path.append('mcp/servers')
+          from semtools_server import _ensure_semtools_available
+          try:
+              _ensure_semtools_available()
+              print('✓ Semtools MCP server validation passed')
+          except Exception as e:
+              print(f'✗ Semtools MCP server validation failed: {e}')
+              sys.exit(1)
+          "

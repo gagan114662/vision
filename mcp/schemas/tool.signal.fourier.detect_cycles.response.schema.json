@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalFourierDetectCyclesResponse",
+  "type": "object",
+  "required": ["cycles"],
+  "properties": {
+    "cycles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "frequency": {"type": "number"},
+          "period": {"type": "number"},
+          "amplitude": {"type": "number"},
+          "power": {"type": "number"}
+        },
+        "required": ["frequency", "period", "amplitude", "power"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

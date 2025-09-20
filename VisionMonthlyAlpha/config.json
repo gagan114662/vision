@@ -1,0 +1,17 @@
+{
+  "algorithm-language": "Python",
+  "algorithm-type-name": "MonthlyUniverseAlphaAlgorithm",
+  "algorithm-location": "lean/algorithms/monthly_universe_alpha.py",
+  "parameters": {},
+  "data-provider": "QuantConnect.Lean.Engine.DataFeeds.ApiDataProvider",
+  "data-channel-provider": "QuantConnect.Lean.Engine.DataFeeds.ApiDataProvider",
+  "job-user-id": 357130,
+  "api-access-token": "",
+  "environment": "backtesting",
+  "environments": {
+    "backtesting": {
+      "live-mode": false,
+      "data-queue-handler": "QuantConnect.Lean.Engine.DataFeeds.FileSystemDataQueueHandler"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalFourierDetectCyclesRequest",
+  "type": "object",
+  "required": ["series"],
+  "properties": {
+    "series": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 16,
+      "description": "Time-ordered numerical series (e.g., prices or returns)."
+    },
+    "sample_rate": {
+      "type": "number",
+      "default": 1.0,
+      "description": "Samples per unit time (default 1.0)."
+    },
+    "top_n": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 3,
+      "description": "Number of dominant cycles to return."
+    }
+  },
+  "additionalProperties": false
+}
