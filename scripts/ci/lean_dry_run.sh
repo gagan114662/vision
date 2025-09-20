@@ -6,6 +6,10 @@ if [[ -z "${QUANTCONNECT_USER_ID:-}" || -z "${QUANTCONNECT_API_TOKEN:-}" ]]; the
   exit 0
 fi
 
+# Install Lean CLI
+echo "Installing Lean CLI..."
+pip install --upgrade lean
+
 # Login to QuantConnect
 echo "Logging into QuantConnect..."
 lean login --user-id "${QUANTCONNECT_USER_ID}" --api-token "${QUANTCONNECT_API_TOKEN}"
