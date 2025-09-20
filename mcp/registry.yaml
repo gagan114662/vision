@@ -43,6 +43,14 @@ namespaces:
         description: Run cross-validation, walk-forward, and bootstrap diagnostics on strategy returns.
         auth: rbac-token
         signing: optional
+  strategy.regime:
+    tools:
+      - id: strategy.regime.detect_states
+        schema: schemas/tool.strategy.regime.detect_states.schema.json
+        response_schema: schemas/tool.strategy.regime.detect_states.response.schema.json
+        description: Detect hidden market regimes using Gaussian HMM.
+        auth: rbac-token
+        signing: optional
   risk:
     tools:
       - id: risk.limits.evaluate_portfolio

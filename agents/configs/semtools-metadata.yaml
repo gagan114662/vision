@@ -92,3 +92,9 @@ initial_tools:
     latency_budget_ms: 2000
     provenance_required: true
     compliance_tags: ["document_intelligence"]
+  - name: strategy.regime.detect_states
+    description: Hidden Markov Model regime detection (requires hmmlearn).
+    cost_estimate: high
+    latency_budget_ms: 5000
+    provenance_required: true
+    compliance_tags: ["mathematical_model", "regime_detection"]

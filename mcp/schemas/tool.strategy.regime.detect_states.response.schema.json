@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StrategyRegimeDetectStatesResponse",
+  "type": "object",
+  "required": ["states", "transition_matrix"],
+  "properties": {
+    "states": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "Most probable hidden regime index for each observation"
+    },
+    "transition_matrix": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {"type": "number"}
+      },
+      "description": "Estimated state transition probability matrix"
+    },
+    "state_means": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {"type": "number"}
+      },
+      "description": "Mean feature values for each regime"
+    },
+    "log_likelihood": {
+      "type": "number",
+      "description": "Total log likelihood of the fitted model"
+    }
+  },
+  "additionalProperties": false
+}
