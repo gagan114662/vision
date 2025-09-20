@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "StrategyMeanReversionEstimateParametersResponse",
+  "type": "object",
+  "required": ["kappa", "theta", "sigma", "profit_score"],
+  "properties": {
+    "kappa": {"type": "number", "description": "Mean reversion speed"},
+    "theta": {"type": "number", "description": "Long-term mean level"},
+    "sigma": {"type": "number", "description": "Volatility parameter"},
+    "profit_score": {
+      "type": "number",
+      "description": "Daily profitability metric (kappa * sqrt(252) / sigma)"
+    }
+  },
+  "additionalProperties": false
+}

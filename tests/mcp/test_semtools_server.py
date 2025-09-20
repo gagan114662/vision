@@ -21,6 +21,19 @@ class SemtoolsServerTests(unittest.TestCase):
         mock_run.assert_called_once()
         self.assertEqual(result["output"], "parsed")
 
+    def test_semtools_parse_structured(self) -> None:
+        markdown = "# Title\ncontent line\n## Section\nmore"
+        with patch.object(subprocess, "run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=[], returncode=0, stdout=markdown, stderr=""
+            )
+            result = semtools.semtools_parse({
+                "paths": [__file__],
+                "structured_output": True,
+            })
+        self.assertEqual(len(result["structured"]), 2)
+        self.assertEqual(result["structured"][0]["heading"], "Title")
+
     def test_semtools_search_invokes_cli(self) -> None:
         with patch.object(subprocess, "run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(

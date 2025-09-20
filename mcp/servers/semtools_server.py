@@ -44,6 +44,24 @@ def _run_semtools(args: List[str]) -> str:
     return result.stdout
 
 
+def _structure_markdown(markdown: str) -> List[Dict[str, Any]]:
+    sections: List[Dict[str, Any]] = []
+    current = None
+    for line in markdown.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('#'):
+            level = len(stripped) - len(stripped.lstrip('#'))
+            heading = stripped[level:].strip()
+            current = {"heading": heading, "level": level, "content": ""}
+            sections.append(current)
+        else:
+            if current is None:
+                current = {"heading": "", "level": 0, "content": ""}
+                sections.append(current)
+            current["content"] += (line + "\n")
+    return sections
+
+
 @register_tool(
     name="semtools.parse",
     schema="./schemas/tool.semtools.parse.schema.json",
@@ -52,10 +70,14 @@ def semtools_parse(params: Dict[str, Any]) -> Dict[str, Any]:
     paths = _validate_paths(params["paths"])
     output_format = params.get("output_format", "markdown")
     extra_args = params.get("extra_args", [])
+    structured_flag = params.get("structured_output", False)
 
     cmd = ["semtools", "parse", "--output", output_format, *extra_args, *paths]
     output = _run_semtools(cmd)
-    return {"output": output}
+    response: Dict[str, Any] = {"output": output}
+    if structured_flag:
+        response["structured"] = _structure_markdown(output)
+    return response
 
 
 @register_tool(

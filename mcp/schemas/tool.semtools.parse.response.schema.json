@@ -7,6 +7,20 @@
     "output": {
       "type": "string",
       "description": "Combined stdout from semtools parse."
+    },
+    "structured": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "heading": {"type": "string"},
+          "level": {"type": "integer"},
+          "content": {"type": "string"}
+        },
+        "required": ["heading", "level", "content"],
+        "additionalProperties": false
+      },
+      "description": "Optional structured representation derived from markdown headings."
     }
   },
   "additionalProperties": false

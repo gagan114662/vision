@@ -51,6 +51,14 @@ namespaces:
         description: Detect hidden market regimes using Gaussian HMM.
         auth: rbac-token
         signing: optional
+  strategy.meanreversion:
+    tools:
+      - id: strategy.meanreversion.estimate_parameters
+        schema: schemas/tool.strategy.meanreversion.estimate_parameters.schema.json
+        response_schema: schemas/tool.strategy.meanreversion.estimate_parameters.response.schema.json
+        description: Estimate Ornstein-Uhlenbeck parameters for mean reversion strategies.
+        auth: rbac-token
+        signing: optional
   risk:
     tools:
       - id: risk.limits.evaluate_portfolio

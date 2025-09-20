@@ -98,3 +98,9 @@ initial_tools:
     latency_budget_ms: 5000
     provenance_required: true
     compliance_tags: ["mathematical_model", "regime_detection"]
+  - name: strategy.meanreversion.estimate_parameters
+    description: Ornstein-Uhlenbeck mean reversion parameter estimation.
+    cost_estimate: medium
+    latency_budget_ms: 3000
+    provenance_required: true
+    compliance_tags: ["mathematical_model", "mean_reversion"]

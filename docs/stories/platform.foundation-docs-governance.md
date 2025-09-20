@@ -34,3 +34,5 @@
 - Implemented semtools MCP stubs (parse/search) with CLI wrappers and tests for document intelligence workflows.
 - Added `scripts/tooling/run_quantconnect_backtest.py` to sync local files with QuantConnect and automate compile/backtest polling via the MCP integration.
 - Shipped Hidden Markov Model regime detection tool (`strategy.regime.detect_states`) with MCP schema, server wrapper, and unit tests (requires hmmlearn when enabled).
+- Added Ornstein-Uhlenbeck mean reversion parameter estimator (`strategy.meanreversion.estimate_parameters`) with MCP schemas, server implementation, and tests.
+- Enhanced semtools parse tool to optionally return structured markdown sections for downstream agents.

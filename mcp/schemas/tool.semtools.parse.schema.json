@@ -18,6 +18,11 @@
       "type": "array",
       "items": {"type": "string"},
       "description": "Additional CLI flags passed to semtools parse."
+    },
+    "structured_output": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, return a structured representation of the parsed markdown."
     }
   },
   "additionalProperties": false
