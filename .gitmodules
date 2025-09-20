@@ -1,0 +1,3 @@
+[submodule "integrations/quantconnect_mcp/vendor"]
+	path = integrations/quantconnect_mcp/vendor
+	url = https://github.com/QuantConnect/mcp-server
