@@ -59,6 +59,22 @@ namespaces:
         description: Estimate Ornstein-Uhlenbeck parameters for mean reversion strategies.
         auth: rbac-token
         signing: optional
+  signal.fourier:
+    tools:
+      - id: signal.fourier.detect_cycles
+        schema: schemas/tool.signal.fourier.detect_cycles.schema.json
+        response_schema: schemas/tool.signal.fourier.detect_cycles.response.schema.json
+        description: Identify dominant cycles via FFT for time-series analysis.
+        auth: rbac-token
+        signing: optional
+  signal.wavelet:
+    tools:
+      - id: signal.wavelet.multiscale_decomposition
+        schema: schemas/tool.signal.wavelet.multiscale_decomposition.schema.json
+        response_schema: schemas/tool.signal.wavelet.multiscale_decomposition.response.schema.json
+        description: Perform Haar wavelet multi-scale decomposition for time-frequency analysis.
+        auth: rbac-token
+        signing: optional
   risk:
     tools:
       - id: risk.limits.evaluate_portfolio
@@ -124,6 +140,38 @@ namespaces:
         response_schema: schemas/tool.quantconnect.backtest.status.response.schema.json
         description: Retrieve QuantConnect backtest status/statistics (stub).
         auth: rbac-token
+        signing: optional
+  autonomous:
+    tools:
+      - id: autonomous.system.diagnose
+        schema: schemas/tool.autonomous.system.diagnose.schema.json
+        response_schema: schemas/tool.autonomous.system.diagnose.response.schema.json
+        description: Perform comprehensive system diagnostics for autonomous recovery planning.
+        auth: none
+        signing: optional
+      - id: autonomous.dependency.analyze
+        schema: schemas/tool.autonomous.dependency.analyze.schema.json
+        response_schema: schemas/tool.autonomous.dependency.analyze.response.schema.json
+        description: Analyze dependency installation options and recommend recovery strategies.
+        auth: none
+        signing: optional
+      - id: autonomous.recovery.execute_strategy
+        schema: schemas/tool.autonomous.recovery.execute_strategy.schema.json
+        response_schema: schemas/tool.autonomous.recovery.execute_strategy.response.schema.json
+        description: Execute a specific recovery strategy for dependency installation.
+        auth: none
+        signing: optional
+      - id: autonomous.recovery.auto_resolve
+        schema: schemas/tool.autonomous.recovery.auto_resolve.schema.json
+        response_schema: schemas/tool.autonomous.recovery.auto_resolve.response.schema.json
+        description: Autonomously resolve dependency issues using intelligent strategy selection.
+        auth: none
+        signing: optional
+      - id: autonomous.recovery.get_history
+        schema: schemas/tool.autonomous.recovery.get_history.schema.json
+        response_schema: schemas/tool.autonomous.recovery.get_history.response.schema.json
+        description: Get the history of recovery attempts for learning and optimization.
+        auth: none
         signing: optional
   qa:
     tools: []

@@ -62,6 +62,12 @@ initial_tools:
     latency_budget_ms: 2000
     provenance_required: true
     compliance_tags: ["visualization", "ux"]
+  - name: signal.wavelet.multiscale_decomposition
+    description: Multi-scale Haar wavelet decomposition for time-frequency analysis.
+    cost_estimate: low
+    latency_budget_ms: 1000
+    provenance_required: true
+    compliance_tags: ["signal_processing"]
   - name: quantconnect.project.sync
     description: Sync local strategy files to a QuantConnect cloud project via MCP (stub until server vendored).
     cost_estimate: medium
@@ -104,3 +110,9 @@ initial_tools:
     latency_budget_ms: 3000
     provenance_required: true
     compliance_tags: ["mathematical_model", "mean_reversion"]
+  - name: signal.fourier.detect_cycles
+    description: Fourier transform-based cycle detection (dominant frequencies).
+    cost_estimate: low
+    latency_budget_ms: 1000
+    provenance_required: true
+    compliance_tags: ["signal_processing"]

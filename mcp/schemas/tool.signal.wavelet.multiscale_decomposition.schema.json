@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalWaveletMultiscaleDecompositionRequest",
+  "type": "object",
+  "required": ["series"],
+  "properties": {
+    "series": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 32,
+      "description": "Time-ordered numerical series for wavelet analysis."
+    },
+    "levels": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "Number of decomposition levels (defaults to min(5, max levels))."
+    },
+    "wavelet": {
+      "type": "string",
+      "enum": ["haar"],
+      "default": "haar",
+      "description": "Wavelet basis to use (haar supported)."
+    }
+  },
+  "additionalProperties": false
+}

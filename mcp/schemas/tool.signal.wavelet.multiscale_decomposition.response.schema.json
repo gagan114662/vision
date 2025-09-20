@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SignalWaveletMultiscaleDecompositionResponse",
+  "type": "object",
+  "required": ["levels", "reconstruction_rmse", "wavelet"],
+  "properties": {
+    "wavelet": {
+      "type": "string",
+      "description": "Wavelet basis used for decomposition."
+    },
+    "reconstruction_rmse": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Root mean squared reconstruction error versus original series."
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["level", "approximation", "detail", "energy_ratio"],
+        "properties": {
+          "level": {"type": "integer", "minimum": 1},
+          "approximation": {
+            "type": "array",
+            "items": {"type": "number"}
+          },
+          "detail": {
+            "type": "array",
+            "items": {"type": "number"}
+          },
+          "energy_ratio": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Share of total signal energy captured by the detail coefficients."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
