@@ -80,3 +80,15 @@ initial_tools:
     latency_budget_ms: 2000
     provenance_required: true
     compliance_tags: ["quantconnect", "model_validation"]
+  - name: semtools.parse
+    description: Parse documents using semtools CLI (LlamaIndex semtools).
+    cost_estimate: medium
+    latency_budget_ms: 5000
+    provenance_required: true
+    compliance_tags: ["document_intelligence"]
+  - name: semtools.search
+    description: Semantic fuzzy search via semtools CLI.
+    cost_estimate: medium
+    latency_budget_ms: 2000
+    provenance_required: true
+    compliance_tags: ["document_intelligence"]

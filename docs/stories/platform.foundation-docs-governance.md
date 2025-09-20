@@ -30,3 +30,4 @@
 - Added lean dry-run runbook and upgraded innovation processor to enforce credential checks and feed status updates.
 - Added QuantConnect MCP integration blueprint, schemas, registry entries, and stubs pending upstream server vendoring.
 - Added tool enhancement backlog from `tooly.md` to upcoming to-do (LlamaIndex semtools, framework evaluation, registry/tooling patterns).
+- Implemented semtools MCP stubs (parse/search) with CLI wrappers and tests for document intelligence workflows.

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SemtoolsSearchResponse",
+  "type": "object",
+  "required": ["results"],
+  "properties": {
+    "results": {
+      "type": "string",
+      "description": "Raw stdout from semtools search."
+    }
+  },
+  "additionalProperties": false
+}

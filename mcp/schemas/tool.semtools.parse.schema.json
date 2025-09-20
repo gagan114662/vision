@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SemtoolsParseRequest",
+  "type": "object",
+  "required": ["paths"],
+  "properties": {
+    "paths": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "List of file paths (relative or absolute) to parse."
+    },
+    "output_format": {
+      "type": "string",
+      "enum": ["markdown", "text"],
+      "default": "markdown"
+    },
+    "extra_args": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Additional CLI flags passed to semtools parse."
+    }
+  },
+  "additionalProperties": false
+}

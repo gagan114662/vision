@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SemtoolsSearchRequest",
+  "type": "object",
+  "required": ["paths", "query"],
+  "properties": {
+    "paths": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Files or directories to search."
+    },
+    "query": {
+      "type": "string",
+      "description": "Semantic search query."
+    },
+    "max_distance": {
+      "type": "number",
+      "description": "Semantic distance threshold (0-1)."
+    },
+    "extra_args": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Additional CLI flags passed to semtools search."
+    }
+  },
+  "additionalProperties": false
+}

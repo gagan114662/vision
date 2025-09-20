@@ -75,6 +75,20 @@ namespaces:
         description: Render annotated price/signal charts for review and documentation.
         auth: rbac-token
         signing: optional
+  semtools:
+    tools:
+      - id: semtools.parse
+        schema: schemas/tool.semtools.parse.schema.json
+        response_schema: schemas/tool.semtools.parse.response.schema.json
+        description: Parse documents using semtools CLI (requires semtools binary).
+        auth: none
+        signing: optional
+      - id: semtools.search
+        schema: schemas/tool.semtools.search.schema.json
+        response_schema: schemas/tool.semtools.search.response.schema.json
+        description: Semantic fuzzy search using semtools CLI.
+        auth: none
+        signing: optional
   quantconnect:
     tools:
       - id: quantconnect.project.sync
