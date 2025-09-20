@@ -32,3 +32,4 @@
 - Documented vendor procedure for QuantConnect MCP server (`integrations/quantconnect_mcp/README.md`) so upstream repo can be cloned into workspace.
 - Added tool enhancement backlog from `tooly.md` to upcoming to-do (LlamaIndex semtools, framework evaluation, registry/tooling patterns).
 - Implemented semtools MCP stubs (parse/search) with CLI wrappers and tests for document intelligence workflows.
+- Added `scripts/tooling/run_quantconnect_backtest.py` to sync local files with QuantConnect and automate compile/backtest polling via the MCP integration.
