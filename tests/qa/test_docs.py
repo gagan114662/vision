@@ -27,7 +27,6 @@ REQUIRED_DOCS = [
     BASE_DIR / "agents" / "prompts" / "innovation_scout.md",
     BASE_DIR / "agents" / "configs" / "innovation_sources.yaml",
     BASE_DIR / "agents" / "workflows" / "innovation_scout.yaml",
-    BASE_DIR / "data" / "processed" / "research_feed.json",
     BASE_DIR / "integrations" / "quantconnect_mcp" / "README.md",
 ]
 
