@@ -33,6 +33,8 @@ try:  # pragma: no cover - exercised via integration tests when dependencies ins
         ReadCompileRequest,
         CreateBacktestRequest,
         ReadBacktestRequest,
+        ListBacktestRequest,
+        DeleteBacktestRequest,
     )
     import httpx
 
@@ -227,4 +229,47 @@ def backtest_status(params: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-__all__ = ["project_sync", "backtest_run", "backtest_status"]
+@register_tool(
+    name="quantconnect.backtest.list",
+    schema="./schemas/tool.quantconnect.backtest.list.schema.json",
+)
+def backtest_list(params: Dict[str, Any]) -> Dict[str, Any]:
+    _ensure_available()
+    project_id = _coerce_project_id(params["project_id"])
+
+    response = _run_post(
+        '/backtests/list',
+        ListBacktestRequest(projectId=project_id),
+        timeout=60.0,
+    )
+
+    backtests = response.get('backtests', [])
+    return {
+        "project_id": str(project_id),
+        "backtests": backtests
+    }
+
+
+@register_tool(
+    name="quantconnect.backtest.delete",
+    schema="./schemas/tool.quantconnect.backtest.delete.schema.json",
+)
+def backtest_delete(params: Dict[str, Any]) -> Dict[str, Any]:
+    _ensure_available()
+    project_id = _coerce_project_id(params["project_id"])
+    backtest_id = params["backtest_id"]
+
+    response = _run_post(
+        '/backtests/delete',
+        DeleteBacktestRequest(projectId=project_id, backtestId=backtest_id),
+        timeout=60.0,
+    )
+
+    return {
+        "project_id": str(project_id),
+        "backtest_id": str(backtest_id),
+        "success": response.get('success', False)
+    }
+
+
+__all__ = ["project_sync", "backtest_run", "backtest_status", "backtest_list", "backtest_delete"]

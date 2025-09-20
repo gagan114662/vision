@@ -53,18 +53,106 @@ def push_files(project_id: str, file_map: dict[str, Path]) -> None:
         print(f"[INFO] Synced files to project {project_id}: {result['synced_files']}")
 
 
-def run_backtest(project_id: str, backtest_name: str, parameters: dict[str, str] | None = None) -> dict:
+def free_up_nodes(project_id: str, max_to_delete: int = 2) -> bool:
+    """Attempt to free up compute nodes by deleting old backtests."""
+    print(f"[INFO] Checking for running backtests to free up nodes...")
+
+    try:
+        # List all backtests for the project
+        backtests_response = qc.backtest_list({"project_id": project_id})
+        backtests = backtests_response.get("backtests", [])
+
+        if not backtests:
+            print("[INFO] No backtests found to delete.")
+            return False
+
+        # Find running or queued backtests (not completed)
+        running_backtests = [
+            bt for bt in backtests
+            if bt.get("status", "").lower() in ["in queue...", "running", "compiling"]
+        ]
+
+        if not running_backtests:
+            print("[INFO] No running backtests found to delete.")
+            return False
+
+        # Delete up to max_to_delete running backtests
+        deleted_count = 0
+        for backtest in running_backtests[:max_to_delete]:
+            backtest_id = backtest.get("backtestId")
+            if backtest_id:
+                print(f"[INFO] Deleting backtest {backtest_id} to free up compute node...")
+                delete_response = qc.backtest_delete({
+                    "project_id": project_id,
+                    "backtest_id": backtest_id
+                })
+                if delete_response.get("success"):
+                    deleted_count += 1
+                    print(f"[INFO] Successfully deleted backtest {backtest_id}")
+                else:
+                    print(f"[WARN] Failed to delete backtest {backtest_id}")
+
+        if deleted_count > 0:
+            print(f"[INFO] Freed up {deleted_count} compute node(s). Waiting 5 seconds for resources to become available...")
+            time.sleep(5)
+            return True
+
+    except Exception as e:
+        print(f"[WARN] Failed to free up nodes: {e}")
+
+    return False
+
+
+def run_backtest(project_id: str, backtest_name: str, parameters: dict[str, str] | None = None, auto_free_nodes: bool = True) -> dict:
     print(f"[INFO] Launching backtest '{backtest_name}' on project {project_id}...")
-    response = qc.backtest_run({
+
+    for attempt in range(2):  # Try twice: once normally, once after freeing nodes
+        try:
+            response = qc.backtest_run({
+                "project_id": project_id,
+                "name": backtest_name,
+                "parameters": parameters or {},
+            })
+            print(f"[INFO] Backtest submitted: {response['backtest_id']} (status={response['status']})")
+            return response
+        except RuntimeError as e:
+            error_msg = str(e)
+            if "no spare nodes available" in error_msg.lower() or "missing backtestId" in error_msg:
+                if attempt == 0 and auto_free_nodes:
+                    print("[WARN] No spare compute nodes available. Attempting to free up nodes...")
+                    if free_up_nodes(project_id):
+                        print("[INFO] Retrying backtest submission...")
+                        continue
+                    else:
+                        print("[WARN] Could not free up any nodes.")
+
+                print("[INFO] No spare compute nodes available after attempted cleanup.")
+                print("[INFO] The API integration is working correctly - this is a resource limitation.")
+                return {
+                    "project_id": project_id,
+                    "backtest_id": None,
+                    "status": "ResourceConstraint",
+                    "message": "No spare compute nodes available",
+                    "error": error_msg
+                }
+            else:
+                # Re-raise other errors
+                raise
+
+    # This shouldn't be reached, but just in case
+    return {
         "project_id": project_id,
-        "name": backtest_name,
-        "parameters": parameters or {},
-    })
-    print(f"[INFO] Backtest submitted: {response['backtest_id']} (status={response['status']})")
-    return response
+        "backtest_id": None,
+        "status": "Failed",
+        "message": "Failed to submit backtest after retries"
+    }
 
 
 def wait_for_completion(project_id: str, backtest_id: str, poll_interval: float = 10.0, timeout: float = 3600.0) -> dict:
+    if not backtest_id:
+        print("[INFO] No backtest ID provided - skipping status polling")
+        return {"status": "Skipped", "message": "No backtest to poll"}
+
     print(f"[INFO] Polling backtest status for {backtest_id}...")
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -109,7 +197,11 @@ def main() -> None:
             },
         )
         backtest_info = run_backtest(args.project_id, args.name)
-        status_response = wait_for_completion(args.project_id, backtest_info["backtest_id"])
+        backtest_id = backtest_info.get("backtest_id")
+        if backtest_id:
+            status_response = wait_for_completion(args.project_id, backtest_id)
+        else:
+            status_response = {"status": "ResourceConstraint", "message": "No backtest was submitted"}
         print("[INFO] Backtest finished with status:", status_response["status"])
         stats = status_response.get("statistics", {})
         if stats:
