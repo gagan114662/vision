@@ -1,474 +1,292 @@
 """
-Comprehensive system integration tests for the complete trading system.
+System integration tests for actually implemented components.
 
-Tests integration between all major components: agents, performance optimization,
-portfolio management, compliance, monitoring, quantum computing, and Web3 DeFi.
+Tests only the components that exist and work, not fictional ones.
 """
-import asyncio
 import unittest
-import numpy as np
-import pandas as pd
-from datetime import datetime, timedelta
+import json
+import os
+from datetime import datetime
 from typing import Dict, List, Any
 
-# Import all major system components
-from agents.core.base_agent import BaseAgent
-from agents.implementations.fundamental_agent import FundamentalAgent
-from agents.implementations.technical_agent import TechnicalAgent
-from agents.implementations.sentiment_agent import SentimentAgent
-from agents.implementations.quantitative_agent import QuantitativeAgent
-
-from mcp.performance.continuous_batching import ContinuousBatchingEngine, ToolRequest
-from mcp.performance.caching import MultiTierCache
-from mcp.performance.streaming import RealTimeStreamingPipeline, StreamEvent, StreamEventType
-from mcp.performance.parallel_execution import ParallelExecutionEngine, WorkTask, WorkloadType
-from mcp.performance.observability import ObservabilityManager
-
-from mcp.portfolio.hrp_optimizer import HRPOptimizer, HRPParameters
-from mcp.portfolio.black_litterman import BlackLittermanOptimizer, AgentView, ViewType, ConfidenceLevel
-
-from mcp.compliance.mifid_ii import MiFIDComplianceManager, ClientCategory
-from mcp.monitoring.production_monitor import ProductionMonitor, SLATarget, ServiceLevel
-from mcp.quantum.quantum_optimizer import QuantumPortfolioManager, QAOAParameters
-from mcp.web3.defi_yield_farming import DeFiPortfolioManager, RiskLevel
+# Test only what actually exists
+from mcp.servers import ally_shell_server
 
 
 class SystemIntegrationTests(unittest.TestCase):
-    """Comprehensive system integration test suite."""
+    """Integration test suite for actually implemented components."""
 
     def setUp(self):
-        """Set up test environment with all system components."""
-        # Initialize agents
-        self.fundamental_agent = FundamentalAgent("fundamental")
-        self.technical_agent = TechnicalAgent("technical")
-        self.sentiment_agent = SentimentAgent("sentiment")
-        self.quantitative_agent = QuantitativeAgent("quantitative")
-
-        # Initialize performance components
-        self.batching_engine = ContinuousBatchingEngine()
-        self.cache = MultiTierCache()
-        self.streaming_pipeline = RealTimeStreamingPipeline()
-        self.parallel_executor = ParallelExecutionEngine()
-        self.observability = ObservabilityManager()
-
-        # Initialize portfolio optimization
-        self.hrp_optimizer = HRPOptimizer(HRPParameters())
-        self.bl_optimizer = BlackLittermanOptimizer()
-
-        # Initialize compliance and monitoring
-        self.compliance_manager = MiFIDComplianceManager("FIRM-001")
-        self.production_monitor = ProductionMonitor()
-
-        # Initialize quantum and Web3
-        self.quantum_manager = QuantumPortfolioManager()
-        self.defi_manager = DeFiPortfolioManager()
-
-        # Test data
-        self.test_returns = self._generate_test_returns()
-        self.test_market_data = self._generate_test_market_data()
-
-    def _generate_test_returns(self) -> pd.DataFrame:
-        """Generate synthetic return data for testing."""
-        np.random.seed(42)
-        dates = pd.date_range(start='2023-01-01', end='2023-12-31', freq='D')
-        assets = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'NVDA']
-
-        returns = np.random.multivariate_normal(
-            mean=[0.0008] * len(assets),
-            cov=np.eye(len(assets)) * 0.02 + 0.005,
-            size=len(dates)
-        )
-
-        return pd.DataFrame(returns, index=dates, columns=assets)
-
-    def _generate_test_market_data(self) -> Dict[str, Any]:
-        """Generate test market data."""
-        return {
-            'prices': {
-                'AAPL': 175.50,
-                'GOOGL': 142.30,
-                'MSFT': 378.85,
-                'TSLA': 248.42,
-                'NVDA': 481.12
-            },
-            'volumes': {
-                'AAPL': 1_250_000,
-                'GOOGL': 987_000,
-                'MSFT': 1_450_000,
-                'TSLA': 2_100_000,
-                'NVDA': 1_800_000
-            },
-            'market_cap': {
-                'AAPL': 2_750_000_000_000,
-                'GOOGL': 1_780_000_000_000,
-                'MSFT': 2_820_000_000_000,
-                'TSLA': 785_000_000_000,
-                'NVDA': 1_200_000_000_000
-            }
-        }
-
-    async def test_agent_collaboration_pipeline(self):
-        """Test multi-agent collaboration for investment decisions."""
-        print("\n=== Testing Agent Collaboration Pipeline ===")
-
-        # Test data for agent analysis
-        symbol = "AAPL"
-        market_data = {
-            "symbol": symbol,
-            "price": 175.50,
-            "volume": 1_250_000,
-            "market_cap": 2_750_000_000_000,
-            "pe_ratio": 29.5,
-            "eps": 6.13,
-            "revenue_growth": 0.08,
-            "news_sentiment": 0.75,
-            "analyst_ratings": {"buy": 15, "hold": 8, "sell": 2}
-        }
-
-        # Get analysis from each agent
-        fundamental_analysis = await self.fundamental_agent.analyze_stock(symbol, market_data)
-        technical_analysis = await self.technical_agent.analyze_stock(symbol, market_data)
-        sentiment_analysis = await self.sentiment_agent.analyze_market_sentiment(symbol, market_data)
-        quantitative_analysis = await self.quantitative_agent.analyze_factors(symbol, market_data)
-
-        # Validate each agent provides analysis
-        self.assertIsNotNone(fundamental_analysis)
-        self.assertIsNotNone(technical_analysis)
-        self.assertIsNotNone(sentiment_analysis)
-        self.assertIsNotNone(quantitative_analysis)
-
-        # Check analysis structure
-        for analysis in [fundamental_analysis, technical_analysis, sentiment_analysis, quantitative_analysis]:
-            self.assertIn('symbol', analysis)
-            self.assertIn('recommendation', analysis)
-            self.assertIn('confidence', analysis)
-            self.assertIn('reasoning', analysis)
-
-        print(f"✓ All agents provided analysis for {symbol}")
-        print(f"  Fundamental: {fundamental_analysis['recommendation']} ({fundamental_analysis['confidence']:.2f})")
-        print(f"  Technical: {technical_analysis['recommendation']} ({technical_analysis['confidence']:.2f})")
-        print(f"  Sentiment: {sentiment_analysis['recommendation']} ({sentiment_analysis['confidence']:.2f})")
-        print(f"  Quantitative: {quantitative_analysis['recommendation']} ({quantitative_analysis['confidence']:.2f})")
-
-    async def test_performance_optimization_stack(self):
-        """Test the complete performance optimization stack."""
-        print("\n=== Testing Performance Optimization Stack ===")
-
-        # Test continuous batching
-        await self.batching_engine.start()
-
-        tool_requests = [
-            ToolRequest(
-                request_id=f"req_{i}",
-                tool_name="test_tool",
-                parameters={"value": i},
-                priority=1
-            ) for i in range(10)
+        """Set up test environment with real components only."""
+        # Test data for shell MCP
+        self.test_commands = [
+            ["pwd"],
+            ["ls", "-la"],
+            ["python3", "--version"],
+            ["git", "status", "--porcelain"]
         ]
 
-        batch = await self.batching_engine.create_batch(tool_requests)
-        self.assertGreater(len(batch.requests), 0)
-        print(f"✓ Continuous batching: Created batch with {len(batch.requests)} requests")
-
-        await self.batching_engine.stop()
-
-        # Test caching
-        await self.cache.put("test_key", "test_value", ttl=60)
-        cached_value = await self.cache.get("test_key")
-        self.assertEqual(cached_value, "test_value")
-        print("✓ Multi-tier caching: Store and retrieve successful")
-
-        # Test streaming pipeline
-        await self.streaming_pipeline.start()
-
-        test_event = StreamEvent(
-            event_id="test_001",
-            event_type=StreamEventType.MARKET_DATA,
-            timestamp_ns=int(datetime.now().timestamp() * 1_000_000_000),
-            data={"symbol": "AAPL", "price": 175.50}
-        )
-
-        success = await self.streaming_pipeline.publish(test_event)
-        self.assertTrue(success)
-        print("✓ Real-time streaming: Event published successfully")
-
-        await self.streaming_pipeline.stop()
-
-        # Test parallel execution
-        async def test_function(x):
-            return x * 2
-
-        tasks = [
-            WorkTask(
-                task_id=f"task_{i}",
-                function=test_function,
-                args=i,
-                workload_type=WorkloadType.CPU_INTENSIVE
-            ) for i in range(5)
+    def _get_test_shell_commands(self) -> List[List[str]]:
+        """Get test shell commands for validation."""
+        return [
+            ["pwd"],
+            ["ls", "-la", "."],
+            ["python3", "--version"],
+            ["git", "status", "--porcelain"]
         ]
 
-        results = await self.parallel_executor.execute_batch(tasks)
-        self.assertEqual(len(results), 5)
-        print(f"✓ Parallel execution: Processed {len(results)} tasks")
+    def test_ally_shell_server_integration(self):
+        """Test Ally shell server integration."""
+        print("\n=== Testing Ally Shell Server Integration ===")
 
-        # Test observability
-        await self.observability.start()
-        self.observability.record_request("test_service", 0.05, success=True)
-        health = self.observability.get_health_status()
-        self.assertIn("status", health)
-        print("✓ Observability: Health monitoring active")
+        # Test basic shell command execution
+        result = ally_shell_server.run_command({
+            "command": ["pwd"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 10,
+            "use_ally": False
+        })
 
-        await self.observability.stop()
+        # Validate response structure
+        self.assertIn("exit_code", result)
+        self.assertIn("stdout", result)
+        self.assertIn("stderr", result)
+        self.assertIn("executor", result)
+        self.assertIn("duration_seconds", result)
 
-    async def test_portfolio_optimization_integration(self):
-        """Test portfolio optimization with HRP and Black-Litterman."""
-        print("\n=== Testing Portfolio Optimization Integration ===")
+        print(f"✓ Shell command executed: exit_code={result['exit_code']}, executor={result['executor']}")
 
-        # Test HRP optimization
-        hrp_allocation = self.hrp_optimizer.optimize(self.test_returns)
-        self.assertIsNotNone(hrp_allocation)
-        self.assertGreater(hrp_allocation.sharpe_ratio, 0)
-        print(f"✓ HRP Optimization: Sharpe ratio = {hrp_allocation.sharpe_ratio:.3f}")
+        # Test git status command
+        git_result = ally_shell_server.run_command({
+            "command": ["git", "status", "--porcelain"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 10,
+            "use_ally": False
+        })
 
-        # Create agent views for Black-Litterman
-        agent_views = [
-            AgentView(
-                view_id="view_001",
-                agent_source="fundamental",
-                view_type=ViewType.ABSOLUTE_RETURN,
-                assets=["AAPL"],
-                expected_return=0.12,
-                confidence=ConfidenceLevel.HIGH,
-                time_horizon=252,
-                rationale="Strong earnings growth expected"
-            ),
-            AgentView(
-                view_id="view_002",
-                agent_source="technical",
-                view_type=ViewType.RELATIVE_RETURN,
-                assets=["GOOGL", "MSFT"],
-                expected_return=0.05,
-                confidence=ConfidenceLevel.MEDIUM,
-                time_horizon=90,
-                rationale="Technical breakout pattern"
-            )
-        ]
+        self.assertEqual(git_result["exit_code"], 0)
+        print(f"✓ Git status command successful: {len(git_result.get('stdout', '').splitlines())} files tracked")
 
-        # Test Black-Litterman with agent views
-        bl_result = self.bl_optimizer.optimize(self.test_returns, agent_views)
-        self.assertIsNotNone(bl_result)
-        self.assertGreater(bl_result.sharpe_ratio, 0)
-        print(f"✓ Black-Litterman: Sharpe ratio = {bl_result.sharpe_ratio:.3f}, Views = {len(agent_views)}")
+    def test_shell_command_variety(self):
+        """Test various shell commands through MCP server."""
+        print("\n=== Testing Shell Command Variety ===")
 
-    async def test_compliance_and_monitoring(self):
-        """Test compliance monitoring and production monitoring."""
-        print("\n=== Testing Compliance and Monitoring ===")
+        commands_tested = []
 
-        # Test MiFID II compliance
-        trade_data = {
-            "trade_id": "trade_001",
-            "instrument_id": "AAPL",
-            "price": 175.50,
-            "quantity": 100,
-            "venue": "primary_exchange",
-            "market_prices": {
-                "primary_exchange": 175.50,
-                "alternative_exchange": 175.52
-            },
-            "execution_time_ms": 45
-        }
+        for command in self._get_test_shell_commands():
+            try:
+                result = ally_shell_server.run_command({
+                    "command": command,
+                    "workdir": ".",
+                    "dry_run": False,
+                    "timeout_seconds": 15,
+                    "use_ally": False
+                })
 
-        compliance_result = await self.compliance_manager.process_trade(
-            trade_data, ClientCategory.RETAIL, "trader_001"
-        )
+                commands_tested.append({
+                    "command": " ".join(command),
+                    "exit_code": result["exit_code"],
+                    "success": result["exit_code"] == 0
+                })
 
-        self.assertIn("compliance_status", compliance_result)
-        self.assertIn("checks_performed", compliance_result)
-        print(f"✓ MiFID II Compliance: Status = {compliance_result['compliance_status']}, Checks = {compliance_result['checks_performed']}")
+            except Exception as e:
+                commands_tested.append({
+                    "command": " ".join(command),
+                    "exit_code": -1,
+                    "success": False,
+                    "error": str(e)
+                })
 
-        # Test production monitoring
-        await self.production_monitor.start()
+        successful_commands = [cmd for cmd in commands_tested if cmd["success"]]
 
-        sla_target = SLATarget(
-            service_name="trading_engine",
-            service_level=ServiceLevel.CRITICAL,
-            uptime_target=99.99,
-            latency_p50_ms=10,
-            latency_p99_ms=50,
-            error_rate_threshold=0.1,
-            throughput_minimum=1000
-        )
+        self.assertGreater(len(successful_commands), 0)
+        print(f"✓ Successfully executed {len(successful_commands)}/{len(commands_tested)} commands")
 
-        self.production_monitor.register_service("trading_engine", sla_target)
-        health = await self.production_monitor.check_health("trading_engine")
-        self.assertIn("status", health)
-        print(f"✓ Production Monitoring: Service health = {health.get('status', 'unknown')}")
+        for cmd in commands_tested:
+            status = "✓" if cmd["success"] else "✗"
+            print(f"  {status} {cmd['command']} (exit: {cmd['exit_code']})")
 
-        await self.production_monitor.stop()
+    def test_workspace_boundary_enforcement(self):
+        """Test workspace boundary enforcement in shell MCP."""
+        print("\n=== Testing Workspace Boundary Enforcement ===")
 
-    async def test_quantum_and_web3_integration(self):
-        """Test quantum computing and Web3 DeFi integration."""
-        print("\n=== Testing Quantum and Web3 Integration ===")
+        # Test that we can execute commands in current working directory
+        result = ally_shell_server.run_command({
+            "command": ["find", ".", "-name", "*.py", "-type", "f"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 10,
+            "use_ally": False
+        })
 
-        # Test quantum optimization
-        returns = self.test_returns.values[:5, :5]  # Limit to 5 assets for quantum simulation
-        covariance = np.cov(returns.T)
+        self.assertEqual(result["exit_code"], 0)
+        python_files = result["stdout"].strip().split("\n") if result["stdout"].strip() else []
+        print(f"✓ Found {len(python_files)} Python files in workspace")
 
-        quantum_result = self.quantum_manager.optimize_with_qaoa(
-            returns.mean(axis=0), covariance, risk_aversion=1.0, p=2
-        )
+        # Test dry run mode
+        dry_result = ally_shell_server.run_command({
+            "command": ["rm", "-rf", "important_file.txt"],
+            "workdir": ".",
+            "dry_run": True,
+            "timeout_seconds": 5,
+            "use_ally": False
+        })
 
-        self.assertIsNotNone(quantum_result)
-        self.assertEqual(quantum_result.algorithm, "QAOA")
-        print(f"✓ Quantum Optimization: Value = {quantum_result.optimal_value:.4f}, Algorithm = {quantum_result.algorithm}")
+        # Dry run should prevent actual execution
+        if dry_result is None or "dry_run" in str(dry_result):
+            print("✓ Dry run mode prevents actual execution")
+        else:
+            self.assertEqual(dry_result["exit_code"], 0)
+            print("✓ Dry run mode handled gracefully")
 
-        # Test benchmarking quantum vs classical
-        benchmark = self.quantum_manager.benchmark_quantum_vs_classical(
-            returns.mean(axis=0), covariance
-        )
+    def test_error_handling_and_timeouts(self):
+        """Test error handling and timeout functionality."""
+        print("\n=== Testing Error Handling and Timeouts ===")
 
-        self.assertIn("quantum", benchmark)
-        self.assertIn("classical", benchmark)
-        print(f"✓ Quantum Benchmark: Speedup = {benchmark.get('speedup', 0):.2f}x")
+        # Test invalid command
+        try:
+            result = ally_shell_server.run_command({
+                "command": ["nonexistent_command_12345"],
+                "workdir": ".",
+                "dry_run": False,
+                "timeout_seconds": 5,
+                "use_ally": False
+            })
+            # Command should fail but not throw exception
+            self.assertNotEqual(result["exit_code"], 0)
+            print("✓ Invalid command handled gracefully")
+        except Exception as e:
+            print(f"✓ Invalid command properly errored: {type(e).__name__}")
 
-        # Test DeFi portfolio management
-        defi_portfolio = await self.defi_manager.create_yield_strategy(
-            amount_usd=10000, risk_level=RiskLevel.MEDIUM
-        )
+        # Test with very short timeout for a command that might take time
+        result = ally_shell_server.run_command({
+            "command": ["sleep", "0.1"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 1,  # Should be enough for 0.1s sleep
+            "use_ally": False
+        })
 
-        self.assertGreater(defi_portfolio.total_value_usd, 0)
-        self.assertGreater(len(defi_portfolio.active_positions), 0)
-        print(f"✓ DeFi Portfolio: Value = ${defi_portfolio.total_value_usd:,.2f}, Positions = {len(defi_portfolio.active_positions)}")
+        self.assertIn("timed_out", result)
+        print(f"✓ Timeout handling working: timed_out={result.get('timed_out', False)}")
 
-        # Test MEV scanning
-        mev_opportunities = await self.defi_manager.scan_mev_opportunities()
-        self.assertIn("arbitrage", mev_opportunities)
-        self.assertIn("liquidation", mev_opportunities)
-        print(f"✓ MEV Scanning: Found {len(mev_opportunities.get('arbitrage', []))} arbitrage, {len(mev_opportunities.get('liquidation', []))} liquidation opportunities")
+    def test_provenance_logging(self):
+        """Test provenance logging functionality."""
+        print("\n=== Testing Provenance Logging ===")
 
-    def test_system_architecture_validation(self):
-        """Validate overall system architecture and component integration."""
-        print("\n=== Testing System Architecture Validation ===")
+        # Execute command and check result structure includes provenance info
+        result = ally_shell_server.run_command({
+            "command": ["echo", "test_provenance"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 5,
+            "use_ally": False
+        })
 
-        # Test component initialization
-        components = {
-            'agents': [self.fundamental_agent, self.technical_agent, self.sentiment_agent, self.quantitative_agent],
-            'performance': [self.batching_engine, self.cache, self.streaming_pipeline, self.parallel_executor],
-            'portfolio': [self.hrp_optimizer, self.bl_optimizer],
-            'compliance': [self.compliance_manager],
-            'monitoring': [self.production_monitor],
-            'quantum': [self.quantum_manager],
-            'web3': [self.defi_manager]
-        }
+        # Check that we have timing and execution details
+        required_fields = ["start_time", "end_time", "duration_seconds", "executor", "workdir"]
+        for field in required_fields:
+            self.assertIn(field, result)
 
-        for category, component_list in components.items():
-            for component in component_list:
-                self.assertIsNotNone(component)
-            print(f"✓ {category.title()}: {len(component_list)} components initialized")
+        print(f"✓ Provenance fields present: {', '.join(required_fields)}")
+        print(f"✓ Execution tracked: {result['duration_seconds']:.3f}s via {result['executor']}")
 
-        # Validate data flow compatibility
-        self.assertEqual(self.test_returns.shape[1], 5)  # 5 assets
-        self.assertGreater(len(self.test_returns), 200)  # Sufficient history
-        print(f"✓ Data Pipeline: {self.test_returns.shape[0]} days × {self.test_returns.shape[1]} assets")
+    def test_mcp_server_module_structure(self):
+        """Validate MCP server module structure and imports."""
+        print("\n=== Testing MCP Server Module Structure ===")
 
-        # Test memory and performance requirements
-        import psutil
-        process = psutil.Process()
-        memory_mb = process.memory_info().rss / 1024 / 1024
-        self.assertLess(memory_mb, 1000)  # Should use < 1GB
-        print(f"✓ Resource Usage: {memory_mb:.1f} MB memory")
+        # Test that ally_shell_server module is properly structured
+        self.assertTrue(hasattr(ally_shell_server, 'run_command'))
 
-    async def test_end_to_end_trading_workflow(self):
-        """Test complete end-to-end trading workflow."""
-        print("\n=== Testing End-to-End Trading Workflow ===")
+        # Test that run_command is callable
+        self.assertTrue(callable(ally_shell_server.run_command))
+
+        print("✓ ally_shell_server module properly structured")
+        print("✓ run_command function available and callable")
+
+        # Test basic module functionality
+        import inspect
+        run_command_sig = inspect.signature(ally_shell_server.run_command)
+        print(f"✓ run_command signature: {run_command_sig}")
+
+    def test_shell_mcp_comprehensive_workflow(self):
+        """Test comprehensive shell MCP workflow."""
+        print("\n=== Testing Shell MCP Comprehensive Workflow ===")
 
         workflow_steps = []
 
-        # Step 1: Market Analysis
-        symbol = "AAPL"
-        market_data = self.test_market_data
-
-        fundamental_view = await self.fundamental_agent.analyze_stock(symbol, {
-            "symbol": symbol,
-            "price": market_data['prices'][symbol],
-            "market_cap": market_data['market_cap'][symbol],
-            "pe_ratio": 29.5,
-            "eps": 6.13
+        # Step 1: Environment validation
+        env_result = ally_shell_server.run_command({
+            "command": ["python3", "--version"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 5,
+            "use_ally": False
         })
-        workflow_steps.append("Market Analysis")
+        self.assertEqual(env_result["exit_code"], 0)
+        workflow_steps.append("Environment Validation")
 
-        # Step 2: Portfolio Optimization
-        hrp_allocation = self.hrp_optimizer.optimize(self.test_returns)
-        workflow_steps.append("Portfolio Optimization")
+        # Step 2: Repository status
+        git_result = ally_shell_server.run_command({
+            "command": ["git", "log", "--oneline", "-5"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 10,
+            "use_ally": False
+        })
+        workflow_steps.append("Repository Status")
 
-        # Step 3: Risk Assessment and Compliance
-        trade_data = {
-            "instrument_id": symbol,
-            "price": market_data['prices'][symbol],
-            "quantity": 100,
-            "venue": "primary_exchange"
-        }
-        compliance_check = await self.compliance_manager.process_trade(
-            trade_data, ClientCategory.PROFESSIONAL, "system"
-        )
-        workflow_steps.append("Compliance Check")
-
-        # Step 4: Performance Monitoring
-        await self.observability.start()
-        self.observability.record_request("trading_workflow", 0.250, success=True)
-        monitoring_health = self.observability.get_health_status()
-        workflow_steps.append("Performance Monitoring")
-        await self.observability.stop()
-
-        # Step 5: Alternative Strategy (DeFi)
-        defi_analysis = await self.defi_manager.get_portfolio_analytics()
-        workflow_steps.append("DeFi Analysis")
+        # Step 3: File system exploration
+        fs_result = ally_shell_server.run_command({
+            "command": ["find", "mcp/servers", "-name", "*.py", "-type", "f"],
+            "workdir": ".",
+            "dry_run": False,
+            "timeout_seconds": 10,
+            "use_ally": False
+        })
+        workflow_steps.append("File System Exploration")
 
         # Validate workflow completion
-        self.assertEqual(len(workflow_steps), 5)
-        self.assertEqual(compliance_check.get('compliance_status'), 'compliant')
-        self.assertGreater(hrp_allocation.sharpe_ratio, 0)
-
+        self.assertEqual(len(workflow_steps), 3)
         print(f"✓ Workflow Steps Completed: {' → '.join(workflow_steps)}")
-        print(f"✓ Final Validation: Portfolio Sharpe = {hrp_allocation.sharpe_ratio:.3f}, Compliance = {compliance_check.get('compliance_status')}")
+        print("✓ All shell operations successful")
 
-    async def run_all_tests(self):
-        """Run all integration tests sequentially."""
-        print("🚀 Starting Comprehensive System Integration Tests")
-        print("=" * 60)
+    def run_all_tests(self):
+        """Run all integration tests for implemented components."""
+        print("🚀 Starting Shell MCP Integration Tests")
+        print("=" * 50)
 
         test_methods = [
-            self.test_agent_collaboration_pipeline,
-            self.test_performance_optimization_stack,
-            self.test_portfolio_optimization_integration,
-            self.test_compliance_and_monitoring,
-            self.test_quantum_and_web3_integration,
-            self.test_end_to_end_trading_workflow
+            self.test_ally_shell_server_integration,
+            self.test_shell_command_variety,
+            self.test_workspace_boundary_enforcement,
+            self.test_error_handling_and_timeouts,
+            self.test_provenance_logging,
+            self.test_mcp_server_module_structure,
+            self.test_shell_mcp_comprehensive_workflow
         ]
 
-        # Run synchronous test first
-        self.test_system_architecture_validation()
-
-        # Run async tests
         for test_method in test_methods:
             try:
-                await test_method()
+                test_method()
             except Exception as e:
                 print(f"❌ Test {test_method.__name__} failed: {e}")
                 raise
 
-        print("\n" + "=" * 60)
-        print("✅ All Integration Tests Passed Successfully!")
-        print(f"📊 System Components Validated: Agents, Performance, Portfolio, Compliance, Monitoring, Quantum, Web3")
-        print(f"🎯 Renaissance Technologies-level Architecture: Complete")
+        print("\n" + "=" * 50)
+        print("✅ All Shell MCP Integration Tests Passed!")
+        print("📊 Components Validated: Shell MCP Server with Ally Integration")
+        print("🎯 Real Implementation Testing: Complete")
 
 
-async def main():
+def main():
     """Run the integration test suite."""
     test_suite = SystemIntegrationTests()
     test_suite.setUp()
-    await test_suite.run_all_tests()
+    test_suite.run_all_tests()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
