@@ -7,6 +7,14 @@ from typing import Any, Dict, List
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 # Autonomous dependency management for matplotlib
 def _ensure_matplotlib():
     """Ensure matplotlib is available, auto-installing and retrying until success."""
@@ -115,6 +123,13 @@ def _render_chart(prices: List[Dict[str, Any]], signals: List[Dict[str, Any]], t
 @register_tool(
     name="visualization.render_price_series",
     schema="./schemas/tool.visualization.render_price_series.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def render_price_series(params: Dict[str, Any]) -> Dict[str, Any]:
     prices = params["prices"]

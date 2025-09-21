@@ -185,6 +185,13 @@ def _structure_markdown(markdown: str) -> List[Dict[str, Any]]:
     name="semtools.parse",
     schema="./schemas/tool.semtools.parse.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
+)
 def semtools_parse(params: Dict[str, Any]) -> Dict[str, Any]:
     paths = _validate_paths(params["paths"])
     output_format = params.get("output_format", "markdown")
@@ -202,6 +209,13 @@ def semtools_parse(params: Dict[str, Any]) -> Dict[str, Any]:
 @register_tool(
     name="semtools.search",
     schema="./schemas/tool.semtools.search.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def semtools_search(params: Dict[str, Any]) -> Dict[str, Any]:
     paths = _validate_paths(params["paths"])

@@ -9,11 +9,16 @@ from typing import Any, Dict, List
 
 try:
     from mcp.server import register_tool
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
 except ImportError:  # pragma: no cover
     def register_tool(*_args: Any, **_kwargs: Any):  # type: ignore
         def decorator(func: Any) -> Any:
             return func
+        return decorator
 
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
         return decorator
 
 
@@ -84,6 +89,13 @@ def _coerce_project_id(project_id: str) -> int:
     name="quantconnect.project.sync",
     schema="./schemas/tool.quantconnect.project.sync.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
+)
 def project_sync(params: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_available()
     project_id = _coerce_project_id(params["project_id"])
@@ -145,6 +157,13 @@ def _wait_for_compile(project_id: int, compile_id: str, timeout_seconds: float =
     name="quantconnect.backtest.run",
     schema="./schemas/tool.quantconnect.backtest.run.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
+)
 def backtest_run(params: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_available()
     project_id = _coerce_project_id(params["project_id"])
@@ -204,6 +223,13 @@ def _flatten_stats(prefix: str, value: Any, collector: Dict[str, Any]) -> None:
     name="quantconnect.backtest.status",
     schema="./schemas/tool.quantconnect.backtest.status.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=5,
+        recovery_timeout=30.0,
+        expected_exception=Exception
+    )
+)
 def backtest_status(params: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_available()
     project_id = _coerce_project_id(params["project_id"])
@@ -233,6 +259,13 @@ def backtest_status(params: Dict[str, Any]) -> Dict[str, Any]:
     name="quantconnect.backtest.list",
     schema="./schemas/tool.quantconnect.backtest.list.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=5,
+        recovery_timeout=30.0,
+        expected_exception=Exception
+    )
+)
 def backtest_list(params: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_available()
     project_id = _coerce_project_id(params["project_id"])
@@ -253,6 +286,13 @@ def backtest_list(params: Dict[str, Any]) -> Dict[str, Any]:
 @register_tool(
     name="quantconnect.backtest.delete",
     schema="./schemas/tool.quantconnect.backtest.delete.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def backtest_delete(params: Dict[str, Any]) -> Dict[str, Any]:
     _ensure_available()

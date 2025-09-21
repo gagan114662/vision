@@ -15,6 +15,14 @@ from typing import Any, Dict, Iterable, Protocol
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 # Autonomous dependency management for pyimmudb
 def _ensure_immudb():
     """Ensure pyimmudb is available, auto-installing and retrying until success."""
@@ -159,6 +167,13 @@ class ProvenanceServer:
 @register_tool(
     name="provenance.get_record",
     schema="./schemas/tool.provenance.get_record.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def get_record(params: Dict[str, Any]) -> Dict[str, Any]:
     """Return provenance record with signed payload."""

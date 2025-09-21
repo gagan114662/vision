@@ -22,6 +22,14 @@ from dataclasses import dataclass
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 
 @dataclass
 class SystemDiagnostics:
@@ -437,6 +445,13 @@ recovery_engine = AutonomousRecoveryEngine()
     name="autonomous.system.diagnose",
     schema="./schemas/tool.autonomous.system.diagnose.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
+)
 def diagnose_system(params: Dict[str, Any]) -> Dict[str, Any]:
     """Perform comprehensive system diagnostics for autonomous recovery planning."""
     include_cached = params.get("include_cached", True)
@@ -470,6 +485,13 @@ def diagnose_system(params: Dict[str, Any]) -> Dict[str, Any]:
     name="autonomous.dependency.analyze",
     schema="./schemas/tool.autonomous.dependency.analyze.schema.json",
 )
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
+)
 def analyze_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
     """Analyze dependency installation options and recommend recovery strategies."""
     package_name = params["package_name"]
@@ -492,6 +514,13 @@ def analyze_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
 @register_tool(
     name="autonomous.recovery.execute_strategy",
     schema="./schemas/tool.autonomous.recovery.execute_strategy.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def execute_recovery_strategy(params: Dict[str, Any]) -> Dict[str, Any]:
     """Execute a specific recovery strategy for dependency installation."""
@@ -516,6 +545,13 @@ def execute_recovery_strategy(params: Dict[str, Any]) -> Dict[str, Any]:
 @register_tool(
     name="autonomous.recovery.auto_resolve",
     schema="./schemas/tool.autonomous.recovery.auto_resolve.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def auto_resolve_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
     """Autonomously resolve dependency issues using intelligent strategy selection."""
@@ -591,6 +627,13 @@ def auto_resolve_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
 @register_tool(
     name="autonomous.recovery.get_history",
     schema="./schemas/tool.autonomous.recovery.get_history.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def get_recovery_history(params: Dict[str, Any]) -> Dict[str, Any]:
     """Get the history of recovery attempts for learning and optimization."""

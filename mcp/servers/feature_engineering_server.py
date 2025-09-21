@@ -8,6 +8,14 @@ from typing import Any, Dict, Iterable, List
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 
 @dataclass
 class PricePoint:
@@ -104,6 +112,13 @@ def _default_window(factor_name: str) -> int:
 @register_tool(
     name="feature-engineering.compute_factor",
     schema="./schemas/tool.feature-engineering.compute_factor.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def compute_factor(params: Dict[str, Any]) -> Dict[str, Any]:
     factor_name = params["factor_name"]

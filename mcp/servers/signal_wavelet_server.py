@@ -8,6 +8,14 @@ import numpy as np
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 
 _SQRT2 = math.sqrt(2.0)
 
@@ -81,6 +89,13 @@ def _decompose(series: np.ndarray, levels: int) -> Tuple[List[Dict[str, Any]], f
 @register_tool(
     name="signal.wavelet.multiscale_decomposition",
     schema="./schemas/tool.signal.wavelet.multiscale_decomposition.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def multiscale_decomposition(params: Dict[str, Any]) -> Dict[str, Any]:
     series = _validate_series(params["series"])

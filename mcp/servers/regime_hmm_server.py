@@ -10,6 +10,14 @@ import numpy as np
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 # Autonomous dependency management using recovery framework
 def _ensure_hmm():
     """Ensure hmmlearn is available using autonomous recovery system."""
@@ -102,6 +110,13 @@ def _validate_inputs(prices: List[float], volumes: List[float] | None) -> np.nda
 @register_tool(
     name="strategy.regime.detect_states",
     schema="./schemas/tool.strategy.regime.detect_states.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def detect_regimes(params: Dict[str, Any]) -> Dict[str, Any]:
     prices = params["prices"]

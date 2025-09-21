@@ -8,6 +8,14 @@ import numpy as np
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 
 @dataclass
 class AdaptiveFilterParams:
@@ -66,6 +74,13 @@ def _adaptive_smooth(series: np.ndarray, alpha: np.ndarray) -> np.ndarray:
 @register_tool(
     name="signal.filter.adaptive_noise_reduction",
     schema="./schemas/tool.signal.filter.adaptive_noise_reduction.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout=60.0,
+        expected_exception=Exception
+    )
 )
 def adaptive_noise_reduction(payload: Dict[str, Any]) -> Dict[str, Any]:
     params = _validate(AdaptiveFilterParams.from_payload(payload))

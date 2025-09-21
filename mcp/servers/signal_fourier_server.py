@@ -6,6 +6,14 @@ from typing import Any, Dict, List
 
 from mcp.server import register_tool
 
+try:
+    from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
+except ImportError:
+    def circuit_breaker(*_args: Any, **_kwargs: Any):  # type: ignore
+        def decorator(func: Any) -> Any:
+            return func
+        return decorator
+
 
 def _validate(series: List[float]) -> np.ndarray:
     if len(series) < 16:
@@ -47,6 +55,13 @@ def _detect_cycles(series: np.ndarray, sample_rate: float, top_n: int) -> List[D
 @register_tool(
     name="signal.fourier.detect_cycles",
     schema="./schemas/tool.signal.fourier.detect_cycles.schema.json",
+)
+@circuit_breaker(
+    CircuitBreakerConfig(
+        failure_threshold=5,
+        recovery_timeout=30.0,
+        expected_exception=ValueError
+    )
 )
 def detect_cycles(params: Dict[str, Any]) -> Dict[str, Any]:
     series = _validate(params["series"])
