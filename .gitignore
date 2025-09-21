@@ -3,3 +3,23 @@
 visualizations/
 __pycache__/
 *.pyc
+
+# Runtime artifacts
+*.db
+*.jsonl
+audit_trail*.jsonl
+demo_audit_trail.jsonl
+provenance.db
+test.db
+
+# Provenance keys
+keys/
+provenance_private_key.pem
+provenance_public_key.pem
+
+# QuantConnect temp files
+quantconnect_projects/
+lean.json
+
+# Market data cache
+data_cache/

@@ -7,6 +7,7 @@ system behavior, regulatory checks, and audit trail integrity.
 import asyncio
 import json
 import logging
+import os
 import sys
 import unittest
 from datetime import datetime, timezone
@@ -14,6 +15,10 @@ from typing import Dict, Any
 
 # Add project root to path
 sys.path.insert(0, '.')
+
+# Set up test environment BEFORE any imports
+os.environ["MCP_SECRET_KEY"] = "test_secret_key_32_characters_minimum_required"
+os.environ["MCP_ENVIRONMENT"] = "test"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -23,9 +28,10 @@ from mcp.risk_compliance_pipeline import (
     RiskCompliancePipeline, RiskLevel, ComplianceStatus, AuditEventType,
     RiskLimits, ComplianceRule
 )
+from tests.utils.config import TestConfigMixin, cleanup_test_artifacts
 
 
-class TestRiskCompliancePipeline(unittest.TestCase):
+class TestRiskCompliancePipeline(unittest.IsolatedAsyncioTestCase, TestConfigMixin):
     """Real test cases for risk and compliance pipeline."""
 
     def setUp(self):
@@ -299,63 +305,6 @@ class TestRiskCompliancePipeline(unittest.TestCase):
                        "All results should have approval status")
 
 
-async def run_async_tests():
-    """Run all async test methods."""
-    suite = unittest.TestSuite()
-    test_class = TestRiskCompliancePipeline()
-
-    # Set up the test instance
-    test_class.setUp()
-
-    # Run async tests
-    print("🧪 Running Risk/Compliance Pipeline Tests")
-    print("=" * 60)
-
-    tests = [
-        ("Risk Assessment Within Limits", test_class.test_risk_assessment_within_limits),
-        ("Risk Assessment Concentration Violation", test_class.test_risk_assessment_concentration_violation),
-        ("Compliance Check Within Regulations", test_class.test_compliance_check_within_regulations),
-        ("Compliance Position Limit Violation", test_class.test_compliance_check_position_limit_violation),
-        ("Audit Trail Persistence", test_class.test_audit_trail_persistence),
-        ("Risk Limits Configuration", test_class.test_risk_limits_configuration),
-        ("Performance Under Load", test_class.test_performance_under_load)
-    ]
-
-    passed = 0
-    failed = 0
-
-    for test_name, test_method in tests:
-        try:
-            print(f"\n🔬 {test_name}...")
-            await test_method()
-            print(f"   ✅ PASSED")
-            passed += 1
-        except Exception as e:
-            print(f"   ❌ FAILED: {e}")
-            failed += 1
-            import traceback
-            traceback.print_exc()
-
-    # Run sync tests
-    print(f"\n🔬 Pipeline Initialization Invalid Config...")
-    try:
-        test_class.test_pipeline_initialization_with_invalid_config()
-        print(f"   ✅ PASSED")
-        passed += 1
-    except Exception as e:
-        print(f"   ❌ FAILED: {e}")
-        failed += 1
-
-    print(f"\n" + "=" * 60)
-    print(f"📊 Test Results: {passed} passed, {failed} failed")
-    print(f"🎯 Success Rate: {(passed/(passed+failed)*100):.1f}%")
-
-    if failed == 0:
-        print("✅ ALL TESTS PASSED - Risk/Compliance pipeline working correctly!")
-    else:
-        print("❌ Some tests failed - check implementation")
-
-    return failed == 0
 
 
 class RiskComplianceIntegrationDemo:
@@ -727,4 +676,8 @@ class RiskComplianceIntegrationDemo:
 
 
 if __name__ == "__main__":
-    asyncio.run(run_async_tests())
+    # Clean up any existing artifacts before running tests
+    cleanup_test_artifacts()
+
+    # Run tests using unittest
+    unittest.main(verbosity=2)
