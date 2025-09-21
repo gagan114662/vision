@@ -18,6 +18,7 @@ from agents.core import (
     BaseAgent, AgentRole, AnalysisRequest, AnalysisResult,
     TradingSignal, SignalDirection, ConfidenceLevel, MarketData
 )
+from mcp.market_data.real_data_provider import RealMarketDataProvider
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +72,10 @@ class TechnicalAgent(BaseAgent):
         self.pattern_min_confidence = self.config.get("pattern_min_confidence", 0.6)
         self.trend_strength_threshold = self.config.get("trend_strength_threshold", 0.3)
 
-        logger.info(f"Technical agent initialized with {self.lookback_periods} lookback periods")
+        # Real market data provider (replaces synthetic data generation)
+        self.data_provider = RealMarketDataProvider()
+
+        logger.info(f"Technical agent initialized with {self.lookback_periods} lookback periods and real market data provider")
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisResult:
         """Perform technical analysis on requested symbols."""
@@ -125,17 +129,81 @@ class TechnicalAgent(BaseAgent):
         )
 
     async def _get_price_data(self, symbol: str) -> List[Dict[str, Any]]:
-        """Get price data for technical analysis."""
-        # In a real implementation, this would fetch from market data providers
-        # For now, we'll simulate realistic price data
+        """Get real price data for technical analysis using RealMarketDataProvider."""
+        try:
+            # Calculate date range for lookback
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=self.lookback_periods + 30)  # Extra buffer for weekends/holidays
 
-        # Generate sample OHLCV data
+            logger.info(f"Fetching real market data for {symbol} from {start_date.date()} to {end_date.date()}")
+
+            # Get real market data
+            stock_data = await self.data_provider.get_stock_data([symbol], start_date, end_date)
+
+            if symbol not in stock_data or not stock_data[symbol].get('prices'):
+                logger.warning(f"No real data available for {symbol}, using fallback data")
+                return self._generate_fallback_data(symbol)
+
+            # Convert real data to technical analysis format
+            symbol_data = stock_data[symbol]
+            prices = symbol_data['prices']
+            volumes = symbol_data.get('volumes', [1000000] * len(prices))  # Default volume if not available
+            dates = symbol_data.get('dates', [])
+
+            # Take only the most recent lookback_periods
+            data_length = min(len(prices), self.lookback_periods)
+            prices = prices[-data_length:]
+            volumes = volumes[-data_length:] if len(volumes) >= data_length else volumes
+
+            data = []
+            for i in range(data_length):
+                # For simplicity, treat prices as close prices and generate OHLC
+                close_price = prices[i]
+
+                # Simple OHLC generation (in real system, would get actual OHLC)
+                volatility = 0.01  # 1% intraday volatility assumption
+                high = close_price * (1 + volatility)
+                low = close_price * (1 - volatility)
+                open_price = prices[i-1] if i > 0 else close_price
+
+                # Parse date if available
+                if i < len(dates):
+                    try:
+                        timestamp = datetime.strptime(dates[i], "%Y-%m-%d")
+                    except (ValueError, TypeError):
+                        timestamp = end_date - timedelta(days=data_length - i)
+                else:
+                    timestamp = end_date - timedelta(days=data_length - i)
+
+                volume = volumes[i] if i < len(volumes) else 1000000
+
+                data.append({
+                    "timestamp": timestamp,
+                    "open": float(open_price),
+                    "high": float(high),
+                    "low": float(low),
+                    "close": float(close_price),
+                    "volume": int(volume)
+                })
+
+            logger.info(f"Retrieved {len(data)} real data points for {symbol} from {symbol_data.get('source', 'unknown')}")
+            return data
+
+        except Exception as e:
+            logger.error(f"Error fetching real market data for {symbol}: {e}")
+            return self._generate_fallback_data(symbol)
+
+    def _generate_fallback_data(self, symbol: str) -> List[Dict[str, Any]]:
+        """Generate fallback data when real data is unavailable."""
+        logger.warning(f"Using fallback synthetic data for {symbol}")
+
+        # Generate sample OHLCV data (kept minimal for fallback only)
         np.random.seed(hash(symbol) % 2147483647)  # Deterministic but symbol-specific
 
         base_price = 100.0
         data = []
 
-        for i in range(self.lookback_periods):
+        for i in range(min(self.lookback_periods, 50)):  # Limit fallback data
             # Random walk with trend
             change = np.random.normal(0, 0.02)  # 2% daily volatility
             trend = 0.0005  # Slight upward trend
@@ -157,7 +225,7 @@ class TechnicalAgent(BaseAgent):
             volume = int(np.random.lognormal(12, 0.5))  # Log-normal volume distribution
 
             data.append({
-                "timestamp": datetime.now() - timedelta(days=self.lookback_periods - i),
+                "timestamp": datetime.now() - timedelta(days=len(data) + 1),
                 "open": open_price,
                 "high": high,
                 "low": low,

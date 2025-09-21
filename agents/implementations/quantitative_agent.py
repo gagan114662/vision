@@ -21,6 +21,7 @@ from agents.core import (
     BaseAgent, AgentRole, AnalysisRequest, AnalysisResult,
     TradingSignal, SignalDirection, ConfidenceLevel, MarketData
 )
+from mcp.market_data.real_data_provider import RealMarketDataProvider
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,10 @@ class QuantitativeAgent(BaseAgent):
         self.factor_window = self.config.get("factor_window", 60)  # 60-day rolling window
         self.min_r_squared = self.config.get("min_r_squared", 0.3)
 
-        logger.info(f"Quantitative agent initialized with {self.lookback_days} days lookback")
+        # Real market data provider (replaces synthetic data generation)
+        self.data_provider = RealMarketDataProvider()
+
+        logger.info(f"Quantitative agent initialized with {self.lookback_days} days lookback and real market data provider")
 
     async def analyze(self, request: AnalysisRequest) -> AnalysisResult:
         """Perform quantitative analysis on requested symbols."""
@@ -153,44 +157,100 @@ class QuantitativeAgent(BaseAgent):
         )
 
     async def _get_multi_symbol_data(self, symbols: List[str]) -> Dict[str, pd.DataFrame]:
-        """Get price data for multiple symbols."""
+        """Get real price data for multiple symbols using RealMarketDataProvider."""
+        try:
+            # Calculate date range for lookback
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=self.lookback_days + 30)  # Extra buffer
+
+            logger.info(f"Fetching real market data for {len(symbols)} symbols from {start_date.date()} to {end_date.date()}")
+
+            # Get real market data for all symbols
+            stock_data = await self.data_provider.get_stock_data(symbols, start_date, end_date)
+
+            price_data = {}
+
+            for symbol in symbols:
+                if symbol not in stock_data or not stock_data[symbol].get('prices'):
+                    logger.warning(f"No real data available for {symbol}, using fallback data")
+                    price_data[symbol] = self._generate_fallback_data_frame(symbol)
+                    continue
+
+                # Convert real data to quantitative analysis format
+                symbol_data = stock_data[symbol]
+                prices = symbol_data['prices']
+                dates = symbol_data.get('dates', [])
+
+                # Take only the most recent lookback_days
+                data_length = min(len(prices), self.lookback_days)
+                prices = prices[-data_length:]
+
+                # Create date index
+                if len(dates) >= data_length:
+                    dates = dates[-data_length:]
+                    try:
+                        date_index = pd.to_datetime(dates)
+                    except (ValueError, TypeError):
+                        date_index = pd.date_range(end=end_date, periods=data_length, freq='D')
+                else:
+                    date_index = pd.date_range(end=end_date, periods=data_length, freq='D')
+
+                # Calculate returns
+                if len(prices) > 1:
+                    returns = [0] + list(np.diff(np.log(prices)))
+                else:
+                    returns = [0]
+
+                # Create DataFrame
+                df = pd.DataFrame({
+                    'price': prices,
+                    'returns': returns
+                }, index=date_index)
+
+                price_data[symbol] = df
+
+            logger.info(f"Retrieved real data for {len([s for s in symbols if s in price_data])} symbols")
+            return price_data
+
+        except Exception as e:
+            logger.error(f"Error fetching real market data: {e}")
+            return self._generate_fallback_multi_data(symbols)
+
+    def _generate_fallback_data_frame(self, symbol: str) -> pd.DataFrame:
+        """Generate fallback DataFrame for a single symbol."""
+        logger.warning(f"Using fallback synthetic data for {symbol}")
+
+        np.random.seed(hash(symbol) % 2147483647)
+
+        dates = pd.date_range(
+            end=datetime.now(),
+            periods=min(self.lookback_days, 50),  # Limit fallback data
+            freq='D'
+        )
+
+        # Generate minimal synthetic data
+        base_return = 0.0008
+        volatility = 0.02
+        returns = np.random.normal(base_return, volatility, len(dates))
+
+        prices = [100.0]
+        for ret in returns[1:]:
+            prices.append(prices[-1] * (1 + ret))
+
+        df = pd.DataFrame({
+            'price': prices,
+            'returns': [0] + list(np.diff(np.log(prices)))
+        }, index=dates)
+
+        return df
+
+    def _generate_fallback_multi_data(self, symbols: List[str]) -> Dict[str, pd.DataFrame]:
+        """Generate fallback data for multiple symbols when real data fails."""
+        logger.warning(f"Using fallback synthetic data for all {len(symbols)} symbols")
+
         price_data = {}
-
         for symbol in symbols:
-            # Generate synthetic price data (in production, would fetch real data)
-            np.random.seed(hash(symbol) % 2147483647)
-
-            dates = pd.date_range(
-                end=datetime.now(),
-                periods=self.lookback_days,
-                freq='D'
-            )
-
-            # Generate correlated returns for realistic pair relationships
-            base_return = 0.0008  # 0.08% daily return
-            volatility = 0.02  # 2% daily volatility
-
-            returns = np.random.normal(base_return, volatility, len(dates))
-
-            # Add sector correlation
-            if symbol.startswith('A'):  # Tech sector proxy
-                sector_factor = np.random.normal(0, 0.01, len(dates))
-                returns += sector_factor * 0.5
-
-            # Calculate prices from returns
-            prices = [100.0]  # Starting price
-            for ret in returns[1:]:
-                prices.append(prices[-1] * (1 + ret))
-
-            # Create DataFrame
-            df = pd.DataFrame({
-                'date': dates,
-                'price': prices,
-                'returns': [0] + list(np.diff(np.log(prices)))
-            })
-            df.set_index('date', inplace=True)
-
-            price_data[symbol] = df
+            price_data[symbol] = self._generate_fallback_data_frame(symbol)
 
         return price_data
 
@@ -198,24 +258,58 @@ class QuantitativeAgent(BaseAgent):
         """Calculate factor model exposures using Fama-French factors."""
         factor_exposures = {}
 
-        # Generate market factor (simplified)
-        market_returns = []
-        for symbol_data in price_data.values():
-            market_returns.append(symbol_data['returns'].values)
+        # Get real market factors from data provider
+        try:
+            # Calculate date range from available data
+            all_dates = []
+            for symbol_data in price_data.values():
+                all_dates.extend(symbol_data.index.tolist())
 
-        if not market_returns:
-            return factor_exposures
+            if not all_dates:
+                return factor_exposures
 
-        # Equal-weighted market return
-        market_factor = np.mean(market_returns, axis=0)
+            start_date = min(all_dates)
+            end_date = max(all_dates)
 
-        # Generate style factors (simplified proxies)
-        size_factor = np.random.normal(0, 0.005, len(market_factor))  # SMB
-        value_factor = np.random.normal(0, 0.004, len(market_factor))  # HML
-        momentum_factor = np.random.normal(0, 0.006, len(market_factor))  # UMD
-        quality_factor = np.random.normal(0, 0.003, len(market_factor))  # RMW
-        volatility_factor = np.random.normal(0, 0.004, len(market_factor))  # LTR
-        profitability_factor = np.random.normal(0, 0.003, len(market_factor))  # CMA
+            # Get real factor data
+            factor_data = await self.data_provider.get_market_factors(start_date, end_date)
+
+            # Extract factor returns matching our data length
+            target_length = len(list(price_data.values())[0])
+
+            market_factor = factor_data.get('market_premium', [0] * target_length)[-target_length:]
+            size_factor = factor_data.get('smb', [0] * target_length)[-target_length:]  # SMB
+            value_factor = factor_data.get('hml', [0] * target_length)[-target_length:]  # HML
+            momentum_factor = factor_data.get('rmw', [0] * target_length)[-target_length:]  # RMW (using as momentum proxy)
+            quality_factor = factor_data.get('cma', [0] * target_length)[-target_length:]  # CMA (conservative minus aggressive)
+
+            # Generate derived factors from real data
+            volatility_factor = [abs(r) * 0.5 for r in market_factor]  # Volatility proxy from market factor
+            profitability_factor = quality_factor  # Use CMA as profitability proxy
+
+            logger.info(f"Using real factor data from {factor_data.get('source', 'unknown')} for {len(market_factor)} periods")
+
+        except Exception as e:
+            logger.warning(f"Failed to get real factor data: {e}, using fallback factors")
+
+            # Fallback to simplified market factor calculation
+            market_returns = []
+            for symbol_data in price_data.values():
+                market_returns.append(symbol_data['returns'].values)
+
+            if not market_returns:
+                return factor_exposures
+
+            # Equal-weighted market return as fallback
+            market_factor = np.mean(market_returns, axis=0)
+
+            # Minimal synthetic factors as fallback
+            size_factor = [0.001] * len(market_factor)  # Constant small factor
+            value_factor = [0.0005] * len(market_factor)
+            momentum_factor = [0.002] * len(market_factor)
+            quality_factor = [0.001] * len(market_factor)
+            volatility_factor = [abs(r) * 0.3 for r in market_factor]  # Based on market volatility
+            profitability_factor = quality_factor
 
         for symbol, data in price_data.items():
             try:

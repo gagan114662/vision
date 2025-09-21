@@ -28,8 +28,15 @@ sys.path.append('.')
 
 try:
     from mcp.servers import ally_shell_server
+    from agents.implementations.technical_agent import TechnicalAgent
+    from agents.implementations.quantitative_agent import QuantitativeAgent
+    from agents.implementations.fundamental_agent import FundamentalAgent
+    from agents.implementations.sentiment_agent import SentimentAgent
+    from agents.core import AnalysisRequest, MarketData
+    REAL_AGENTS_AVAILABLE = True
     MCP_AVAILABLE = True
 except ImportError:
+    REAL_AGENTS_AVAILABLE = False
     MCP_AVAILABLE = False
     # Mock for demonstration
     class MockShellServer:
@@ -112,17 +119,81 @@ class AutonomousOrchestrator:
     def __init__(self, user_id: str = None):
         self.user_id = user_id or os.getenv("QUANTCONNECT_USER_ID", "357130")
 
-        # Initialize mock agents (replace with real agents when imports work)
-        self.agents = {
-            "fundamental": MockAgent("fundamental"),
-            "technical": MockAgent("technical"),
-            "sentiment": MockAgent("sentiment"),
-            "quantitative": MockAgent("quantitative")
-        }
+        # Initialize real agents if available, otherwise use mocks
+        if REAL_AGENTS_AVAILABLE:
+            logger.info("Initializing real agents for autonomous orchestration")
+            self.agents = {
+                "fundamental": FundamentalAgent(agent_id="orchestrator_fundamental"),
+                "technical": TechnicalAgent(agent_id="orchestrator_technical"),
+                "sentiment": SentimentAgent(agent_id="orchestrator_sentiment"),
+                "quantitative": QuantitativeAgent(agent_id="orchestrator_quantitative")
+            }
+        else:
+            logger.warning("Real agents not available, using mock agents")
+            self.agents = {
+                "fundamental": MockAgent("fundamental"),
+                "technical": MockAgent("technical"),
+                "sentiment": MockAgent("sentiment"),
+                "quantitative": MockAgent("quantitative")
+            }
 
         # Track workflow state
         self.active_tasks: List[AutonomousTask] = []
         self.hypotheses: List[TradingHypothesis] = []
+
+    async def _call_agent_analyze(self, agent_name: str, agent, symbol: str, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Call agent analyze method, handling both real and mock agents."""
+        try:
+            if REAL_AGENTS_AVAILABLE and hasattr(agent, 'analyze'):
+                # Real agent - use AnalysisRequest interface
+                request = AnalysisRequest(
+                    symbols=[symbol],
+                    analysis_type="comprehensive",
+                    market_data=MarketData.from_dict({
+                        "symbol": symbol,
+                        "data": market_data,
+                        "timestamp": datetime.now()
+                    }),
+                    timeframe_hours=24
+                )
+                result = await agent.analyze(request)
+
+                # Convert AnalysisResult to dict format expected by orchestrator
+                if result and result.signals:
+                    # Take first signal and convert to expected format
+                    signal = result.signals[0]
+                    return {
+                        "symbol": symbol,
+                        "recommendation": signal.direction.value.lower(),
+                        "confidence": signal.confidence.value / 100.0,  # Convert to 0-1 scale
+                        "reasoning": signal.reasoning,
+                        "agent_type": agent_name,
+                        "analysis_data": result.analysis_data
+                    }
+                else:
+                    return {
+                        "symbol": symbol,
+                        "recommendation": "hold",
+                        "confidence": 0.5,
+                        "reasoning": f"{agent_name} analysis produced no clear signals",
+                        "agent_type": agent_name
+                    }
+            else:
+                # Mock agent - use legacy interface
+                if agent_name == "fundamental":
+                    return await agent.analyze_stock(symbol, market_data)
+                elif agent_name == "technical":
+                    return await agent.analyze_stock(symbol, market_data)
+                elif agent_name == "sentiment":
+                    return await agent.analyze_market_sentiment(symbol, market_data)
+                else:  # quantitative
+                    return await agent.analyze_factors(symbol, market_data)
+
+        except Exception as e:
+            logger.error(f"Error calling {agent_name} agent: {e}")
+            return None
+
+        # Initialize additional tracking
         self.strategies: List[QuantConnectStrategy] = []
 
         logger.info(f"Autonomous orchestrator initialized for user {self.user_id}")
@@ -273,34 +344,38 @@ class AutonomousOrchestrator:
                 if universe:
                     symbol = universe[0]
 
+                    # Prepare agent-specific market data
                     if agent_name == "fundamental":
-                        analysis = await agent.analyze_stock(symbol, {
+                        agent_market_data = {
                             "symbol": symbol,
-                            "price": 100.0,  # Mock price
+                            "price": 100.0,  # Mock price (real agent will fetch actual data)
                             "market_cap": 1000000000,
                             "pe_ratio": 25.0,
                             "eps": 4.0
-                        })
+                        }
                     elif agent_name == "technical":
-                        analysis = await agent.analyze_stock(symbol, {
+                        agent_market_data = {
                             "symbol": symbol,
                             "price": 100.0,
                             "volume": 1000000,
                             "signals": mcp_analysis.get("signals", [])
-                        })
+                        }
                     elif agent_name == "sentiment":
-                        analysis = await agent.analyze_market_sentiment(symbol, {
+                        agent_market_data = {
                             "symbol": symbol,
                             "news_sentiment": 0.6,
                             "social_sentiment": 0.7,
                             "market_sentiment": 0.65
-                        })
+                        }
                     else:  # quantitative
-                        analysis = await agent.analyze_factors(symbol, {
+                        agent_market_data = {
                             "symbol": symbol,
                             "returns": [0.01, -0.005, 0.02, 0.015],
                             "market_returns": [0.008, -0.003, 0.018, 0.012]
-                        })
+                        }
+
+                    # Call agent using unified interface
+                    analysis = await self._call_agent_analyze(agent_name, agent, symbol, agent_market_data)
 
                     if analysis and analysis.get("confidence", 0) > 0.5:
                         hypothesis = self._create_hypothesis_from_agent_analysis(
@@ -536,6 +611,48 @@ class AutonomousOrchestrator:
             supporting_analysis=analysis,
             generated_by=[agent_name],
             mcp_evidence=mcp_analysis.get("signals", [])
+        )
+
+    def _build_consensus_hypothesis(self, hypotheses: List[TradingHypothesis]) -> Optional[TradingHypothesis]:
+        """Build consensus hypothesis from multiple agent hypotheses."""
+        if not hypotheses:
+            return None
+
+        # Simple consensus: average confidence and combine recommendations
+        avg_confidence = sum(h.confidence for h in hypotheses) / len(hypotheses)
+        combined_agents = [agent for h in hypotheses for agent in h.generated_by]
+
+        # Take the most common recommendation
+        recommendations = []
+        for h in hypotheses:
+            if "buy" in h.title.lower():
+                recommendations.append("buy")
+            elif "sell" in h.title.lower():
+                recommendations.append("sell")
+            else:
+                recommendations.append("hold")
+
+        # Most frequent recommendation
+        consensus_rec = max(set(recommendations), key=recommendations.count)
+
+        # Get target symbols (combine all)
+        all_symbols = []
+        for h in hypotheses:
+            all_symbols.extend(h.target_symbols)
+        target_symbols = list(set(all_symbols))
+
+        return TradingHypothesis(
+            hypothesis_id=f"consensus_{int(time.time())}",
+            title=f"Multi-Agent Consensus: {consensus_rec.title()}",
+            description=f"Consensus from {len(hypotheses)} agents: {', '.join(combined_agents)}",
+            confidence=avg_confidence,
+            time_horizon_days=60,  # Medium term
+            target_symbols=target_symbols,
+            expected_return=0.08 if consensus_rec == "buy" else (-0.03 if consensus_rec == "sell" else 0.02),
+            risk_level="medium",
+            supporting_analysis={"individual_hypotheses": [h.title for h in hypotheses]},
+            generated_by=combined_agents,
+            mcp_evidence=[]
         )
 
     def _create_combined_hypothesis(
