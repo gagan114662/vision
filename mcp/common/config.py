@@ -95,10 +95,6 @@ class SecurityConfig:
     cors_origins: List[str] = field(default_factory=list)
     require_https: bool = True
 
-    def __post_init__(self):
-        if not self.secret_key:
-            raise ConfigValidationError("SECRET_KEY must be set for security")
-
 
 @dataclass
 class QuantConnectConfig:
@@ -238,6 +234,12 @@ class ConfigLoader:
             if database_url:
                 config.database = DatabaseConfig.from_url(database_url)
 
+        # Special handling for security config
+        if hasattr(config, 'security') and isinstance(config.security, SecurityConfig):
+            secret_key = self._get_env_var("SECRET_KEY")
+            if secret_key:
+                config.security.secret_key = secret_key
+
         # Environment-specific overrides
         environment = Environment(self._get_env_var("ENVIRONMENT", "development"))
         config.environment = environment
@@ -250,6 +252,10 @@ class ConfigLoader:
             config.debug = True
             config.logging.level = "DEBUG"
             config.security.require_https = False
+
+        # Validate critical security config after all loading is complete
+        if not config.security.secret_key:
+            raise ConfigValidationError("SECRET_KEY must be set for security")
 
         return config
 

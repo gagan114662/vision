@@ -71,13 +71,15 @@ def _calculate_var(positions: List[Position], confidence_level: float) -> float:
 
     # Get VaR calculation method from configuration
     var_method = "historical_simulation"
-    if _server_config:
-        var_method = _server_config.get_setting("var_method", "historical_simulation")
+    server_config = _get_server_config()
+    if server_config:
+        var_method = server_config.get_setting("var_method", "historical_simulation")
 
     # Get lookback period from configuration
     lookback_days = 252
-    if _tool_config:
-        lookback_days = _tool_config.get_parameter("lookback_days", 252)
+    tool_config = _get_tool_config()
+    if tool_config:
+        lookback_days = tool_config.get_parameter("lookback_days", 252)
 
     portfolio_value = sum(pos.market_value for pos in positions)
 
@@ -107,8 +109,9 @@ def evaluate_portfolio(params: Dict[str, Any]) -> Dict[str, Any]:
 
     # Use configuration for default values
     default_confidence = 0.95
-    if _tool_config:
-        default_confidence = _tool_config.get_parameter("confidence_level", 0.95)
+    tool_config = _get_tool_config()
+    if tool_config:
+        default_confidence = tool_config.get_parameter("confidence_level", 0.95)
         logger.info(f"Using configured confidence level: {default_confidence}")
 
     positions = [Position.from_dict(p) for p in params["positions"]]
@@ -143,8 +146,9 @@ def evaluate_portfolio(params: Dict[str, Any]) -> Dict[str, Any]:
 
     # Add configuration-aware alerting
     alerts = []
-    if _server_config:
-        alert_settings = _server_config.get_setting("alert_thresholds", {})
+    server_config = _get_server_config()
+    if server_config:
+        alert_settings = server_config.get_setting("alert_thresholds", {})
 
         if alert_settings.get("var_breach") and "VaR limit exceeded" in breaches:
             alerts.append({"type": "var_breach", "severity": "high", "message": "VaR limit exceeded"})
@@ -157,12 +161,13 @@ def evaluate_portfolio(params: Dict[str, Any]) -> Dict[str, Any]:
 
     # Add configuration metadata
     config_metadata = {}
-    if _server_config:
-        config_metadata["var_method"] = _server_config.get_setting("var_method", "historical_simulation")
-        config_metadata["stress_testing_enabled"] = _server_config.get_setting("enable_stress_testing", True)
+    if server_config:
+        config_metadata["var_method"] = server_config.get_setting("var_method", "historical_simulation")
+        config_metadata["stress_testing_enabled"] = server_config.get_setting("enable_stress_testing", True)
 
-    if _tool_config:
-        config_metadata["lookback_days"] = _tool_config.get_parameter("lookback_days", 252)
+    tool_config = _get_tool_config()
+    if tool_config:
+        config_metadata["lookback_days"] = tool_config.get_parameter("lookback_days", 252)
         config_metadata["confidence_level"] = confidence
 
     result = {
@@ -175,13 +180,13 @@ def evaluate_portfolio(params: Dict[str, Any]) -> Dict[str, Any]:
         "alerts": alerts,
         "config_metadata": config_metadata,
         "server_config": {
-            "enabled": _server_config.enabled if _server_config else True,
-            "server_type": _server_config.server_type.value if _server_config else "risk_management"
+            "enabled": server_config.enabled if server_config else True,
+            "server_type": server_config.server_type.value if server_config else "risk_management"
         }
     }
 
     # Log the assessment if logging is enabled
-    if _tool_config and _tool_config.logging_enabled:
+    if tool_config and tool_config.logging_enabled:
         logger.info(f"Risk assessment completed: {len(breaches)} breaches, {len(alerts)} alerts generated")
 
     return result
