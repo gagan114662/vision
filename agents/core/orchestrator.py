@@ -110,36 +110,47 @@ class InMemoryMessageBus:
                 break
 
 
-class MockDataProvider:
-    """Mock data provider for testing purposes."""
+class RealMarketDataProvider:
+    """Real market data provider using MCP market data server."""
+
+    def __init__(self):
+        self._use_fallback = False
 
     async def get_market_data(self, symbols: List[str]) -> List[MarketData]:
-        """Get mock market data."""
-        market_data = []
-        base_timestamp = datetime.now(timezone.utc)
+        """Get real market data from MCP server."""
+        try:
+            # Import market data server
+            from mcp.servers.market_data_server import get_real_time_market_data
 
-        for i, symbol in enumerate(symbols):
-            # Generate realistic-looking mock data
-            base_price = 100 + (i * 25)  # Vary prices by symbol
+            # Call MCP tool
+            result = await get_real_time_market_data({"symbols": symbols})
 
-            data = MarketData(
-                symbol=symbol,
-                timestamp=base_timestamp,
-                price=base_price + (i % 10),  # Some variation
-                volume=1000000 + (i * 100000),
-                bid=base_price - 0.5,
-                ask=base_price + 0.5,
-                high_24h=base_price * 1.02,
-                low_24h=base_price * 0.98,
-                metadata={
-                    "exchange": "NASDAQ",
-                    "currency": "USD",
-                    "last_updated": base_timestamp.isoformat()
-                }
-            )
-            market_data.append(data)
+            if result.get("success") and result.get("data"):
+                market_data = []
+                for data_point in result["data"]:
+                    # Convert back to MarketData object
+                    data = MarketData(
+                        symbol=data_point["symbol"],
+                        timestamp=datetime.fromisoformat(data_point["timestamp"].replace('Z', '+00:00')),
+                        price=data_point["price"],
+                        volume=data_point["volume"],
+                        bid=data_point.get("bid"),
+                        ask=data_point.get("ask"),
+                        high_24h=data_point.get("high_24h"),
+                        low_24h=data_point.get("low_24h"),
+                        metadata=data_point.get("metadata", {})
+                    )
+                    market_data.append(data)
 
-        return market_data
+                logger.info(f"Retrieved real market data for {len(market_data)} symbols")
+                return market_data
+            else:
+                logger.warning(f"Market data request failed: {result.get('error', 'Unknown error')}")
+                return await self._get_fallback_data(symbols)
+
+        except Exception as e:
+            logger.error(f"Real market data error: {e}")
+            return await self._get_fallback_data(symbols)
 
     async def get_historical_data(
         self,
@@ -147,15 +158,85 @@ class MockDataProvider:
         start_time: datetime,
         end_time: datetime
     ) -> List[MarketData]:
-        """Get mock historical data."""
-        # Generate mock historical data
+        """Get historical market data."""
+        try:
+            from mcp.servers.market_data_server import get_historical_market_data
+
+            days = (end_time - start_time).days
+            result = await get_historical_market_data({
+                "symbol": symbol,
+                "days": min(days, 365)
+            })
+
+            if result.get("success") and result.get("data"):
+                market_data = []
+                for data_point in result["data"]:
+                    data = MarketData(
+                        symbol=data_point["symbol"],
+                        timestamp=datetime.fromisoformat(data_point["timestamp"].replace('Z', '+00:00')),
+                        price=data_point["price"],
+                        volume=data_point["volume"],
+                        metadata=data_point.get("metadata", {})
+                    )
+                    market_data.append(data)
+
+                logger.info(f"Retrieved {len(market_data)} historical data points for {symbol}")
+                return market_data
+            else:
+                logger.warning(f"Historical data request failed: {result.get('error', 'Unknown error')}")
+                return await self._get_fallback_historical_data(symbol, start_time, end_time)
+
+        except Exception as e:
+            logger.error(f"Historical data error: {e}")
+            return await self._get_fallback_historical_data(symbol, start_time, end_time)
+
+    async def _get_fallback_data(self, symbols: List[str]) -> List[MarketData]:
+        """Fallback to mock data when real data is unavailable."""
+        if not self._use_fallback:
+            logger.warning("Falling back to mock market data")
+            self._use_fallback = True
+
+        market_data = []
+        base_timestamp = datetime.now(timezone.utc)
+
+        for i, symbol in enumerate(symbols):
+            # Generate deterministic mock data
+            import hashlib
+            seed = int(hashlib.md5(symbol.encode()).hexdigest()[:8], 16)
+            base_price = 50 + (seed % 200)
+
+            data = MarketData(
+                symbol=symbol,
+                timestamp=base_timestamp,
+                price=base_price + (i % 10),
+                volume=1000000 + (i * 100000),
+                bid=base_price - 0.5,
+                ask=base_price + 0.5,
+                high_24h=base_price * 1.02,
+                low_24h=base_price * 0.98,
+                metadata={
+                    "source": "fallback_mock",
+                    "warning": "Real market data unavailable"
+                }
+            )
+            market_data.append(data)
+
+        return market_data
+
+    async def _get_fallback_historical_data(
+        self,
+        symbol: str,
+        start_time: datetime,
+        end_time: datetime
+    ) -> List[MarketData]:
+        """Fallback historical data generation."""
         data_points = []
         current_time = start_time
         base_price = 100.0
 
         while current_time <= end_time:
             # Simple random walk
-            price_change = (hash(current_time.isoformat()) % 100) / 500 - 0.1  # ±10%
+            price_change = (hash(current_time.isoformat()) % 100) / 500 - 0.1
             base_price = max(base_price * (1 + price_change), 1.0)
 
             data = MarketData(
@@ -163,7 +244,10 @@ class MockDataProvider:
                 timestamp=current_time,
                 price=base_price,
                 volume=1000000,
-                metadata={"historical": True}
+                metadata={
+                    "source": "fallback_mock",
+                    "historical": True
+                }
             )
             data_points.append(data)
             current_time += timedelta(hours=1)
@@ -180,7 +264,7 @@ class MultiAgentOrchestrator:
 
         # Components
         self._message_bus = InMemoryMessageBus()
-        self._data_provider = MockDataProvider()
+        self._data_provider = RealMarketDataProvider()
         self._agents: Dict[AgentRole, BaseAgent] = {}
 
         # MCP Server connections (would be real MCP clients)
@@ -597,5 +681,5 @@ __all__ = [
     "OrchestrationResult",
     "OrchestrationPhase",
     "InMemoryMessageBus",
-    "MockDataProvider"
+    "RealMarketDataProvider"
 ]

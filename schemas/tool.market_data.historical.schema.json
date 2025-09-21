@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Get Historical Market Data",
+  "description": "Retrieve historical market data for analysis and backtesting",
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{1,10}$",
+      "description": "Stock symbol to retrieve historical data for (e.g., 'AAPL')"
+    },
+    "days": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 365,
+      "default": 30,
+      "description": "Number of days of historical data to retrieve"
+    },
+    "interval": {
+      "type": "string",
+      "enum": ["1m", "5m", "15m", "30m", "1h", "1d"],
+      "default": "1h",
+      "description": "Data interval granularity"
+    }
+  },
+  "required": ["symbol"],
+  "additionalProperties": false
+}

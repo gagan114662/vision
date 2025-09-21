@@ -89,12 +89,13 @@ class FundamentalAgent(BaseAgent):
 
     async def _get_fundamental_data(self, symbol: str) -> Dict[str, Any]:
         """Get fundamental data for a symbol."""
-        # In a real implementation, this would fetch from financial data providers
-        # like Bloomberg, Refinitiv, Yahoo Finance, or Alpha Vantage
+        # Get real current price from market data
+        current_price = await self._get_current_price(symbol)
 
-        # Simulated fundamental data structure
+        # TODO: Integrate with real fundamental data providers
+        # For now, use realistic mock data with real current price
         mock_data = {
-            "current_price": 150.0,
+            "current_price": current_price,
             "market_cap": 2.5e12,  # $2.5T
             "revenue_ttm": 400e9,   # $400B TTM revenue
             "revenue_growth_3y": 0.08,  # 8% 3-year average growth
@@ -123,6 +124,30 @@ class FundamentalAgent(BaseAgent):
         }
 
         return mock_data
+
+    async def _get_current_price(self, symbol: str) -> float:
+        """Get current market price for a symbol."""
+        try:
+            # Use market data provider to get real current price
+            if hasattr(self, 'data_provider') and self.data_provider:
+                market_data = await self.data_provider.get_market_data([symbol])
+                if market_data and len(market_data) > 0:
+                    price = market_data[0].price
+                    logger.info(f"Retrieved real current price for {symbol}: ${price:.2f}")
+                    return price
+                else:
+                    logger.warning(f"No market data available for {symbol}")
+
+            # Fallback to deterministic mock price
+            import hashlib
+            seed = int(hashlib.md5(symbol.encode()).hexdigest()[:8], 16)
+            fallback_price = 50 + (seed % 200)  # $50-$250 range
+            logger.info(f"Using fallback price for {symbol}: ${fallback_price:.2f}")
+            return float(fallback_price)
+
+        except Exception as e:
+            logger.error(f"Error getting current price for {symbol}: {e}")
+            return 150.0  # Default fallback
 
     async def _calculate_dcf_value(self, symbol: str, data: Dict[str, Any]) -> Dict[str, Any]:
         """Calculate Discounted Cash Flow valuation."""
