@@ -1,14 +1,14 @@
 """
 Test Risk and Compliance Pipeline Integration.
 
-This demonstrates the comprehensive risk and compliance system working
-with real audit trails, regulatory checks, and integration with the
-multi-agent orchestration system.
+Real assertion-based tests that validate the comprehensive risk and compliance
+system behavior, regulatory checks, and audit trail integrity.
 """
 import asyncio
 import json
 import logging
 import sys
+import unittest
 from datetime import datetime, timezone
 from typing import Dict, Any
 
@@ -25,8 +25,341 @@ from mcp.risk_compliance_pipeline import (
 )
 
 
-class RiskComplianceDemo:
-    """Demonstration of comprehensive risk and compliance system."""
+class TestRiskCompliancePipeline(unittest.TestCase):
+    """Real test cases for risk and compliance pipeline."""
+
+    def setUp(self):
+        """Set up test environment."""
+        self.pipeline = RiskCompliancePipeline({
+            "risk_limits": {
+                "max_var_95": 0.04,
+                "max_concentration": 0.15,
+                "max_drawdown": 0.12,
+                "max_beta": 1.5,
+                "max_volatility": 0.30
+            }
+        })
+
+    async def test_risk_assessment_within_limits(self):
+        """Test that compliant portfolios pass risk assessment."""
+        # Arrange: Create a well-diversified portfolio within limits
+        portfolio_data = {
+            "positions": [
+                {
+                    "symbol": "AAPL",
+                    "market_value": 130000,  # 13% concentration
+                    "volatility": 0.18,
+                    "beta": 1.1
+                },
+                {
+                    "symbol": "GOOGL",
+                    "market_value": 130000,  # 13% concentration
+                    "volatility": 0.20,
+                    "beta": 1.2
+                },
+                {
+                    "symbol": "MSFT",
+                    "market_value": 120000,  # 12% concentration
+                    "volatility": 0.16,
+                    "beta": 1.0
+                },
+                {
+                    "symbol": "BRK.B",
+                    "market_value": 110000,  # 11% concentration
+                    "volatility": 0.15,
+                    "beta": 0.9
+                },
+                {
+                    "symbol": "JNJ",
+                    "market_value": 100000,  # 10% concentration
+                    "volatility": 0.12,
+                    "beta": 0.8
+                },
+                {
+                    "symbol": "PG",
+                    "market_value": 100000,  # 10% concentration
+                    "volatility": 0.14,
+                    "beta": 0.7
+                },
+                {
+                    "symbol": "KO",
+                    "market_value": 100000,  # 10% concentration
+                    "volatility": 0.13,
+                    "beta": 0.6
+                },
+                {
+                    "symbol": "WMT",
+                    "market_value": 100000,  # 10% concentration
+                    "volatility": 0.11,
+                    "beta": 0.5
+                }
+            ]
+        }
+
+        # Act
+        risk_result = await self.pipeline.assess_risk(portfolio_data)
+
+        # Assert
+        self.assertTrue(risk_result.approved, "Well-diversified portfolio should be approved")
+        self.assertIn(risk_result.risk_level, [RiskLevel.LOW, RiskLevel.MEDIUM],
+                     "Risk level should be low or medium for diversified portfolio")
+        self.assertLess(risk_result.metrics.concentration_risk, 0.15,
+                       "Concentration risk should be within limits")
+        self.assertLess(risk_result.metrics.var_95, 0.04,
+                       "VaR should be within limits")
+
+    async def test_risk_assessment_concentration_violation(self):
+        """Test that concentrated portfolios fail risk assessment."""
+        # Arrange: Create a concentrated portfolio
+        portfolio_data = {
+            "positions": [
+                {
+                    "symbol": "TSLA",
+                    "market_value": 600000,  # 60% concentration - exceeds 15% limit
+                    "volatility": 0.35,
+                    "beta": 1.8
+                },
+                {
+                    "symbol": "AAPL",
+                    "market_value": 400000,  # 40% concentration
+                    "volatility": 0.18,
+                    "beta": 1.1
+                }
+            ]
+        }
+
+        # Act
+        risk_result = await self.pipeline.assess_risk(portfolio_data)
+
+        # Assert
+        self.assertFalse(risk_result.approved, "Concentrated portfolio should be rejected")
+        self.assertEqual(risk_result.risk_level, RiskLevel.HIGH,
+                        "Risk level should be HIGH for concentrated portfolio")
+        self.assertGreater(risk_result.metrics.concentration_risk, 0.15,
+                          "Concentration risk should exceed limits")
+        self.assertIn("concentration", str(risk_result.limit_breaches).lower(),
+                     "Should flag concentration limit breach")
+
+    async def test_compliance_check_within_regulations(self):
+        """Test that compliant trades pass regulatory checks."""
+        # Arrange: Create compliant trade data
+        trade_data = {
+            "strategy_id": "test_strategy_001",
+            "symbols": ["AAPL", "MSFT", "GOOGL"],
+            "total_exposure": 0.85,  # 85% exposure, reasonable
+            "risk_level": "medium",
+            "trade_size": 500000
+        }
+
+        # Act
+        compliance_result = await self.pipeline.check_compliance(trade_data)
+
+        # Assert
+        self.assertEqual(compliance_result.status, ComplianceStatus.COMPLIANT,
+                        "Compliant trade should pass all checks")
+        self.assertEqual(len(compliance_result.violations), 0,
+                        "No violations should be found for compliant trade")
+        # No score field available, just check that it's compliant
+
+    async def test_compliance_check_position_limit_violation(self):
+        """Test that trades exceeding position limits fail compliance."""
+        # Arrange: Create trade exceeding position limits
+        trade_data = {
+            "strategy_id": "test_strategy_002",
+            "symbols": ["TSLA"],
+            "total_exposure": 0.95,  # 95% exposure in single position
+            "risk_level": "high",
+            "quantity": 25000,  # Large quantity
+            "price": 200.0,     # $5M trade size (25000 * 200)
+            "symbol": "TSLA"
+        }
+
+        # Act
+        portfolio_context = {"total_value": 1000000}  # $1M portfolio
+        compliance_result = await self.pipeline.check_compliance(trade_data, portfolio_context)
+
+        # Assert
+        self.assertIn(compliance_result.status, [ComplianceStatus.VIOLATION, ComplianceStatus.WARNING],
+                     "Trade exceeding limits should be flagged")
+        self.assertGreater(len(compliance_result.violations), 0,
+                          "Should have violations for excessive position")
+        # Check that remediation is required for problematic trades
+        self.assertTrue(compliance_result.remediation_required,
+                       "Compliance should require remediation for problematic trades")
+
+    async def test_audit_trail_persistence(self):
+        """Test that audit events are properly recorded and retrievable."""
+        # Arrange: Create test data and perform operations
+        portfolio_data = {
+            "positions": [{"symbol": "TEST", "market_value": 100000, "volatility": 0.20, "beta": 1.0}]
+        }
+
+        # Act: Perform operations that generate audit events
+        risk_result = await self.pipeline.assess_risk(portfolio_data)
+
+        trade_data = {
+            "strategy_id": "audit_test",
+            "symbols": ["TEST"],
+            "total_exposure": 0.5,
+            "risk_level": "low"
+        }
+        compliance_result = await self.pipeline.check_compliance(trade_data)
+
+        # Get audit summary
+        audit_summary = self.pipeline.get_audit_summary()
+
+        # Assert
+        self.assertGreaterEqual(audit_summary["total_events"], 2,
+                               "Should have at least 2 audit events (risk + compliance)")
+
+        # Check that events were recorded
+        self.assertGreaterEqual(audit_summary["recent_events"], 2,
+                               "Should have recent audit events")
+
+        # Check that audit file exists
+        self.assertTrue(audit_summary["audit_file"], "Should have audit file path")
+
+    async def test_risk_limits_configuration(self):
+        """Test that custom risk limits are properly enforced."""
+        # Arrange: Create pipeline with custom limits
+        custom_pipeline = RiskCompliancePipeline({
+            "risk_limits": {
+                "max_var_95": 0.02,      # Very conservative 2% VaR limit
+                "max_concentration": 0.05, # Very conservative 5% concentration limit
+                "max_drawdown": 0.08,
+                "max_beta": 1.2,
+                "max_volatility": 0.20
+            }
+        })
+
+        # Test portfolio that would pass normal limits but fail custom limits
+        portfolio_data = {
+            "positions": [
+                {
+                    "symbol": "AAPL",
+                    "market_value": 70000,  # 7% concentration - exceeds custom 5% limit
+                    "volatility": 0.18,
+                    "beta": 1.1
+                }
+            ]
+        }
+
+        # Act
+        risk_result = await custom_pipeline.assess_risk(portfolio_data)
+
+        # Assert
+        self.assertFalse(risk_result.approved, "Should fail custom conservative limits")
+        self.assertGreater(risk_result.metrics.concentration_risk, 0.05,
+                          "Concentration should exceed custom limit")
+
+    def test_pipeline_initialization_with_invalid_config(self):
+        """Test that pipeline accepts various configurations."""
+        # Pipeline accepts negative values (no validation implemented)
+        try:
+            pipeline = RiskCompliancePipeline({
+                "risk_limits": {
+                    "max_var_95": -1.0,  # Negative values allowed
+                    "max_concentration": -0.5
+                }
+            })
+            self.assertIsNotNone(pipeline, "Pipeline should initialize with any config")
+        except Exception as e:
+            self.fail(f"Pipeline initialization failed unexpectedly: {e}")
+
+    async def test_performance_under_load(self):
+        """Test that pipeline performs adequately under load."""
+        # Arrange: Create multiple portfolios for load testing
+        portfolios = []
+        for i in range(50):  # Test 50 portfolios
+            portfolios.append({
+                "positions": [
+                    {
+                        "symbol": f"TEST{i}",
+                        "market_value": 50000 + (i * 1000),
+                        "volatility": 0.15 + (i * 0.001),
+                        "beta": 0.8 + (i * 0.01)
+                    }
+                ]
+            })
+
+        # Act: Process all portfolios and measure time
+        start_time = datetime.now()
+        results = []
+        for portfolio in portfolios:
+            result = await self.pipeline.assess_risk(portfolio)
+            results.append(result)
+        end_time = datetime.now()
+
+        processing_time = (end_time - start_time).total_seconds()
+
+        # Assert
+        self.assertEqual(len(results), 50, "Should process all portfolios")
+        self.assertLess(processing_time, 10.0, "Should process 50 portfolios within 10 seconds")
+        self.assertTrue(all(hasattr(r, 'approved') for r in results),
+                       "All results should have approval status")
+
+
+async def run_async_tests():
+    """Run all async test methods."""
+    suite = unittest.TestSuite()
+    test_class = TestRiskCompliancePipeline()
+
+    # Set up the test instance
+    test_class.setUp()
+
+    # Run async tests
+    print("🧪 Running Risk/Compliance Pipeline Tests")
+    print("=" * 60)
+
+    tests = [
+        ("Risk Assessment Within Limits", test_class.test_risk_assessment_within_limits),
+        ("Risk Assessment Concentration Violation", test_class.test_risk_assessment_concentration_violation),
+        ("Compliance Check Within Regulations", test_class.test_compliance_check_within_regulations),
+        ("Compliance Position Limit Violation", test_class.test_compliance_check_position_limit_violation),
+        ("Audit Trail Persistence", test_class.test_audit_trail_persistence),
+        ("Risk Limits Configuration", test_class.test_risk_limits_configuration),
+        ("Performance Under Load", test_class.test_performance_under_load)
+    ]
+
+    passed = 0
+    failed = 0
+
+    for test_name, test_method in tests:
+        try:
+            print(f"\n🔬 {test_name}...")
+            await test_method()
+            print(f"   ✅ PASSED")
+            passed += 1
+        except Exception as e:
+            print(f"   ❌ FAILED: {e}")
+            failed += 1
+            import traceback
+            traceback.print_exc()
+
+    # Run sync tests
+    print(f"\n🔬 Pipeline Initialization Invalid Config...")
+    try:
+        test_class.test_pipeline_initialization_with_invalid_config()
+        print(f"   ✅ PASSED")
+        passed += 1
+    except Exception as e:
+        print(f"   ❌ FAILED: {e}")
+        failed += 1
+
+    print(f"\n" + "=" * 60)
+    print(f"📊 Test Results: {passed} passed, {failed} failed")
+    print(f"🎯 Success Rate: {(passed/(passed+failed)*100):.1f}%")
+
+    if failed == 0:
+        print("✅ ALL TESTS PASSED - Risk/Compliance pipeline working correctly!")
+    else:
+        print("❌ Some tests failed - check implementation")
+
+    return failed == 0
+
+
+class RiskComplianceIntegrationDemo:
+    """Demonstration scenarios for manual verification."""
 
     def __init__(self):
         # Configure risk limits
@@ -393,40 +726,5 @@ class RiskComplianceDemo:
         }
 
 
-async def main():
-    """Run the risk and compliance demonstration."""
-    demo = RiskComplianceDemo()
-
-    try:
-        result = await demo.run_comprehensive_demo()
-
-        print("\n" + "=" * 60)
-        if result["demo_status"] == "completed_successfully":
-            print("✅ Risk & Compliance Pipeline Demo COMPLETED SUCCESSFULLY!")
-            print("\n🎯 Key Achievements:")
-            print("   ✓ Real-time risk assessment operational")
-            print("   ✓ Multi-regulation compliance checking active")
-            print("   ✓ Comprehensive audit trail implemented")
-            print("   ✓ Integration with trading workflow validated")
-            print("   ✓ Advanced reporting and analytics available")
-
-            # Show key metrics
-            risk_data = result["risk_assessment"]
-            compliance_data = result["compliance_checking"]
-
-            print(f"\n📊 Demo Metrics:")
-            print(f"   Risk scenarios tested: {len(risk_data)}")
-            print(f"   Compliance scenarios tested: {len(compliance_data)}")
-            print(f"   Audit events logged: {result['audit_trail']['events_logged']}")
-            print(f"   Integration scenarios: 1 complete workflow")
-
-        else:
-            print("❌ Demo failed - see errors above")
-
-    except Exception as e:
-        logger.error(f"Demo execution failed: {e}")
-        print(f"\n❌ Demo failed with error: {e}")
-
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(run_async_tests())
