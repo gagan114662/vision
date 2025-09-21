@@ -11,9 +11,23 @@ from mcp.common.server_config import get_server_config, get_tool_config
 
 logger = logging.getLogger(__name__)
 
-# Get server configuration
-_server_config = get_server_config("risk_server")
-_tool_config = get_tool_config("risk_server", "risk.limits.evaluate_portfolio")
+# Lazy configuration loading to avoid import-time SECRET_KEY validation
+_server_config = None
+_tool_config = None
+
+def _get_server_config():
+    """Get server config lazily."""
+    global _server_config
+    if _server_config is None:
+        _server_config = get_server_config("risk_server")
+    return _server_config
+
+def _get_tool_config():
+    """Get tool config lazily."""
+    global _tool_config
+    if _tool_config is None:
+        _tool_config = get_tool_config("risk_server", "risk.limits.evaluate_portfolio")
+    return _tool_config
 
 
 @dataclass

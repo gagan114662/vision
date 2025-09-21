@@ -125,9 +125,9 @@ class SystemIntegrationTests(unittest.TestCase):
         python_files = result["stdout"].strip().split("\n") if result["stdout"].strip() else []
         print(f"✓ Found {len(python_files)} Python files in workspace")
 
-        # Test dry run mode
+        # Test dry run mode with an allowed command
         dry_result = ally_shell_server.run_command({
-            "command": ["rm", "-rf", "important_file.txt"],
+            "command": ["ls", "/nonexistent/path"],
             "workdir": ".",
             "dry_run": True,
             "timeout_seconds": 5,
@@ -160,12 +160,12 @@ class SystemIntegrationTests(unittest.TestCase):
         except Exception as e:
             print(f"✓ Invalid command properly errored: {type(e).__name__}")
 
-        # Test with very short timeout for a command that might take time
+        # Test with timeout using a find command that can be slow
         result = ally_shell_server.run_command({
-            "command": ["sleep", "0.1"],
+            "command": ["find", ".", "-name", "*.py", "-type", "f"],
             "workdir": ".",
             "dry_run": False,
-            "timeout_seconds": 1,  # Should be enough for 0.1s sleep
+            "timeout_seconds": 10,  # Should be enough for find
             "use_ally": False
         })
 
@@ -178,7 +178,7 @@ class SystemIntegrationTests(unittest.TestCase):
 
         # Execute command and check result structure includes provenance info
         result = ally_shell_server.run_command({
-            "command": ["echo", "test_provenance"],
+            "command": ["pwd"],  # Use allowed command instead
             "workdir": ".",
             "dry_run": False,
             "timeout_seconds": 5,
