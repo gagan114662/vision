@@ -4,6 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List
 
 from mcp.server import register_tool
+from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
 
 
 _STATUS_SEVERITY = {"PASS": 0, "WAIVED": 1, "CONCERNS": 2, "FAIL": 3}
@@ -25,6 +26,14 @@ def _determine_status(evidence: List[Dict[str, Any]], outstanding: List[str]) ->
 @register_tool(
     name="compliance.generate_summary",
     schema="./schemas/tool.compliance.generate_summary.schema.json",
+)
+@circuit_breaker(
+    name="compliance_server.generate_summary",
+    config=CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout_seconds=30.0,
+        expected_exception=Exception
+    )
 )
 def generate_summary(params: Dict[str, Any]) -> Dict[str, Any]:
     strategy_id = params["strategy_id"]

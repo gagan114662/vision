@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from mcp.server import register_tool
 from mcp.common.server_config import get_server_config, get_tool_config
+from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,14 @@ def _execute(params: AllyExecutionRequest) -> Dict[str, Any]:
 @register_tool(
     name="ops.shell.run_command",
     schema="./schemas/tool.ops.shell.run_command.schema.json",
+)
+@circuit_breaker(
+    name="ally_shell_server.run_command",
+    config=CircuitBreakerConfig(
+        failure_threshold=5,
+        recovery_timeout_seconds=60.0,
+        expected_exception=(subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError)
+    )
 )
 def run_command(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Execute shell command with configuration-based security and timeout settings."""

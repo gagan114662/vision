@@ -6,7 +6,7 @@ Based on analysis of `vision.md`, `ROADMAP.md`, `tooly.md`, `enhanced_system_roa
 
 ### Infrastructure & MCP Servers
 - ⚠️ **MCP Registry Implementation** – Registry exists but many registered tools remain stubs or demos; needs end-to-end validation before calling complete.
-- ⚠️ **Core MCP Servers** – 14 servers present, yet several (compliance, risk, quantconnect, semtools) still rely on fallbacks/mocks. Production readiness unproven.
+- ⚠️ **Core MCP Servers** – 14 servers present, yet several (compliance, risk, quantconnect, semtools) still rely on fallbacks/mocks. New tests cover QuantConnect client parsing/fallbacks, but live MCP → QC API validation remains outstanding.
 - ❌ **Test Infrastructure** – Current suite covers only a handful of shell/resilience cases; critical agents/portfolio/QC flows lack automated tests.
 - ⚠️ **Basic Tool Schemas** – Schemas defined, but not consistently enforced against live inputs/outputs.
 - ⚠️ **GitHub Workflows** – CI runs but omits integration/backtest/coverage checks; needs substantial expansion.

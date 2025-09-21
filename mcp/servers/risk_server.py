@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 from mcp.server import register_tool
 from mcp.common.server_config import get_server_config, get_tool_config
+from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,14 @@ def _calculate_var(positions: List[Position], confidence_level: float) -> float:
 @register_tool(
     name="risk.limits.evaluate_portfolio",
     schema="./schemas/tool.risk.limits.evaluate_portfolio.schema.json",
+)
+@circuit_breaker(
+    name="risk_server.evaluate_portfolio",
+    config=CircuitBreakerConfig(
+        failure_threshold=3,
+        recovery_timeout_seconds=30.0,
+        expected_exception=Exception
+    )
 )
 def evaluate_portfolio(params: Dict[str, Any]) -> Dict[str, Any]:
     """Evaluate portfolio risk with configurable parameters."""
