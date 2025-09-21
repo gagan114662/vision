@@ -72,37 +72,105 @@ class RealQuantConnectExecutor:
         try:
             print(f"📡 Creating QuantConnect project: {strategy_name}")
 
-            # Create project (simplified - would use real MCP tools)
-            project_data = {
-                "projectId": f"auto_project_{int(datetime.now().timestamp())}",
-                "name": strategy_name,
-                "language": "Python"
-            }
+            # Import the real QuantConnect vendor tools
+            import sys
+            from pathlib import Path
+            vendor_src = Path(__file__).resolve().parents[0] / "integrations" / "quantconnect_mcp" / "vendor" / "src"
+            if vendor_src.exists() and str(vendor_src) not in sys.path:
+                sys.path.insert(0, str(vendor_src))
 
-            # Create algorithm file (simplified)
-            file_data = {
-                "name": "main.py",
-                "content": algorithm_code
-            }
+            from tools.project import create_project
+            from tools.files import update_file
+            from tools.backtests import create_backtest, read_backtest
 
-            # Create backtest (simplified)
-            backtest_data = {
-                "projectId": project_data["projectId"],
-                "name": f"{strategy_name}_backtest"
-            }
+            # Create project using real MCP tool
+            from models import CreateProjectRequest
+            create_request = CreateProjectRequest(
+                name=strategy_name,
+                language="Python"
+            )
 
-            # Simulate API calls (replace with real MCP tool calls)
+            project_response = await create_project(create_request)
+            if not project_response.projects:
+                raise Exception("Failed to create project: No project returned")
+
+            project = project_response.projects[0]
+            project_id = project.projectId
+            print(f"✅ Created project {project_id}")
+
+            # Upload algorithm file using real MCP tool
+            from models import UpdateFileRequest
+            file_request = UpdateFileRequest(
+                projectId=project_id,
+                name="main.py",
+                content=algorithm_code
+            )
+
+            file_response = await update_file(file_request)
+            print(f"✅ Uploaded algorithm file to project")
+
+            # Create backtest using real MCP tool
+            from models import CreateBacktestRequest
+            backtest_request = CreateBacktestRequest(
+                projectId=project_id,
+                name=f"{strategy_name}_backtest"
+            )
+
+            backtest_response = await create_backtest(backtest_request)
+            if not backtest_response.backtests:
+                raise Exception("Failed to create backtest: No backtest returned")
+
+            backtest = backtest_response.backtests[0]
+            backtest_id = backtest.backtestId
+            print(f"✅ Created backtest {backtest_id}")
+
+            # Wait for backtest completion and read results
+            import time
+            max_wait = 300  # 5 minutes max
+            wait_time = 0
+
+            while wait_time < max_wait:
+                from models import ReadBacktestRequest
+                read_request = ReadBacktestRequest(backtestId=backtest_id)
+                backtest_result = await read_backtest(read_request)
+
+                if backtest_result.backtest:
+                    status = backtest_result.backtest.status
+
+                    if status == "Completed":
+                        print(f"✅ Backtest completed successfully")
+                        break
+                    elif status in ["Error", "Cancelled"]:
+                        raise Exception(f"Backtest failed with status: {status}")
+                    else:
+                        print(f"⏳ Backtest status: {status}, waiting...")
+                        time.sleep(10)
+                        wait_time += 10
+                else:
+                    print(f"⚠️ Failed to read backtest")
+                    time.sleep(10)
+                    wait_time += 10
+
+            if wait_time >= max_wait:
+                raise Exception("Backtest timed out after 5 minutes")
+
+            # Extract real results from QuantConnect API response
+            backtest_data = backtest_result.backtest
+            statistics = backtest_data.statistics if hasattr(backtest_data, 'statistics') else {}
+            performance = backtest_data.performance if hasattr(backtest_data, 'performance') else {}
+
             result = {
                 "success": True,
-                "project_id": project_data["projectId"],
-                "backtest_id": f"bt_{int(datetime.now().timestamp())}",
+                "project_id": project_id,
+                "backtest_id": backtest_id,
                 "status": "completed",
-                "statistics": {
-                    "Total Return": 0.15,
-                    "Sharpe Ratio": 1.8,
-                    "Maximum Drawdown": 0.08,
-                    "Annual Volatility": 0.12
-                },
+                "statistics": statistics,
+                "performance": performance,
+                "total_return": getattr(statistics, 'totalPerformance', 0.0) if statistics else 0.0,
+                "sharpe_ratio": getattr(statistics, 'sharpeRatio', 0.0) if statistics else 0.0,
+                "max_drawdown": abs(getattr(statistics, 'drawdown', 0.0)) if statistics else 0.0,
+                "annual_return": getattr(statistics, 'annualReturn', 0.0) if statistics else 0.0,
+                "volatility": getattr(statistics, 'annualStandardDeviation', 0.2) if statistics else 0.2,
                 "method": "quantconnect_api"
             }
 

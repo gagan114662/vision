@@ -2,7 +2,7 @@
 Advanced portfolio optimization and risk management modules.
 
 Implements Hierarchical Risk Parity (HRP), Black-Litterman enhancement,
-and other sophisticated portfolio construction techniques.
+factor models, and other sophisticated portfolio construction techniques.
 """
 
 from .hrp_optimizer import (
@@ -27,6 +27,23 @@ from .black_litterman import (
     AgentViewAggregator
 )
 
+from .factor_models import (
+    FactorType,
+    FactorExposure,
+    FactorRiskModel,
+    FactorModelBuilder,
+    PortfolioOptimizer,
+    PortfolioOptimizationResult
+)
+
+from .portfolio_engine import (
+    RebalanceFrequency,
+    PortfolioPosition,
+    PortfolioSnapshot,
+    RebalanceSignal,
+    PortfolioEngine
+)
+
 __all__ = [
     # HRP Optimization
     "HRPOptimizer",
@@ -46,5 +63,20 @@ __all__ = [
     "ConfidenceLevel",
     "EquilibriumCalculator",
     "ViewMatrixBuilder",
-    "AgentViewAggregator"
+    "AgentViewAggregator",
+
+    # Factor Models
+    "FactorType",
+    "FactorExposure",
+    "FactorRiskModel",
+    "FactorModelBuilder",
+    "PortfolioOptimizer",
+    "PortfolioOptimizationResult",
+
+    # Portfolio Engine
+    "RebalanceFrequency",
+    "PortfolioPosition",
+    "PortfolioSnapshot",
+    "RebalanceSignal",
+    "PortfolioEngine"
 ]
