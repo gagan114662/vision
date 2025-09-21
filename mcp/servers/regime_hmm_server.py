@@ -1,9 +1,7 @@
 """Hidden Markov Model regime detection MCP tool."""
 from __future__ import annotations
 
-import math
-import sys
-from pathlib import Path
+import logging
 from typing import Any, Dict, List
 
 import numpy as np
@@ -18,63 +16,78 @@ except ImportError:
             return func
         return decorator
 
-# Autonomous dependency management using recovery framework
+
+logger = logging.getLogger(__name__)
+
+
 def _ensure_hmm():
-    """Ensure hmmlearn is available using autonomous recovery system."""
+    """Return hmmlearn GaussianHMM or a deterministic fallback implementation."""
     try:
-        from hmmlearn.hmm import GaussianHMM
+        from hmmlearn.hmm import GaussianHMM  # type: ignore
+        logger.info("Using hmmlearn GaussianHMM implementation")
         return GaussianHMM
     except ImportError:
-        print("🤖 Initiating autonomous recovery for hmmlearn...")
+        logger.warning("hmmlearn not available; using deterministic fallback for regime detection")
 
-        # Use autonomous recovery system
-        try:
-            # Import the recovery system (will be available through MCP)
-            sys.path.insert(0, str(Path(__file__).parent))
-            from autonomous_recovery_server import recovery_engine
+        class GaussianHMMFallback:
+            def __init__(self, n_components: int, covariance_type: str = "full", n_iter: int = 100, **_: Any) -> None:
+                self.n_components = n_components
+                self.covariance_type = covariance_type
+                self.n_iter = n_iter
+                self._state_means: np.ndarray | None = None
+                self._transitions: np.ndarray | None = None
 
-            # Analyze the dependency
-            analysis = recovery_engine.analyze_dependency("hmmlearn")
-            print(f"📊 Analysis complete: {len(analysis.installation_strategies)} strategies available")
+            def fit(self, features: np.ndarray) -> "GaussianHMMFallback":
+                if features.size == 0:
+                    raise ValueError("No features provided")
+                primary = features[:, 0]
+                percentiles = np.linspace(0, 100, self.n_components + 1)
+                bins = np.percentile(primary, percentiles)
+                bins[0] = -np.inf
+                bins[-1] = np.inf
+                states = np.digitize(primary, bins[1:-1], right=True)
+                self._state_means = np.vstack([
+                    features[states == idx].mean(axis=0) if np.any(states == idx) else np.zeros(features.shape[1])
+                    for idx in range(self.n_components)
+                ])
 
-            # Auto-resolve the dependency
-            result = recovery_engine.execute_recovery_strategy("hmmlearn", analysis.recommended_approach)
+                transitions = np.zeros((self.n_components, self.n_components), dtype=float)
+                for prev, nxt in zip(states[:-1], states[1:]):
+                    transitions[prev, nxt] += 1
+                transitions += 1  # Laplace smoothing
+                transitions /= transitions.sum(axis=1, keepdims=True)
+                self._transitions = transitions
+                self._last_states = states
+                return self
 
-            if result["success"]:
-                print("✅ Autonomous recovery successful")
-                try:
-                    from hmmlearn.hmm import GaussianHMM
-                    return GaussianHMM
-                except ImportError:
-                    print("⚠️ Package installed but import failed, trying alternative strategies...")
+            def predict(self, features: np.ndarray) -> np.ndarray:
+                if self._state_means is None:
+                    raise RuntimeError("Model must be fitted before prediction")
+                dists = np.linalg.norm(features[:, None, :] - self._state_means[None, :, :], axis=2)
+                return np.argmin(dists, axis=1)
 
-                    # Try additional strategies
-                    for strategy in analysis.installation_strategies:
-                        if strategy != analysis.recommended_approach:
-                            result = recovery_engine.execute_recovery_strategy("hmmlearn", strategy)
-                            if result["success"]:
-                                try:
-                                    from hmmlearn.hmm import GaussianHMM
-                                    print(f"✅ Success with strategy: {strategy}")
-                                    return GaussianHMM
-                                except ImportError:
-                                    continue
+            def score(self, features: np.ndarray) -> float:
+                if self._state_means is None:
+                    raise RuntimeError("Model must be fitted before scoring")
+                preds = self.predict(features)
+                errors = features - self._state_means[preds]
+                return -float(np.mean(np.sum(errors ** 2, axis=1)))
 
-            print("❌ Autonomous recovery failed")
-            raise RuntimeError(
-                "Autonomous recovery system was unable to install hmmlearn. "
-                "This may indicate system-level constraints or network issues. "
-                f"Last error: {result.get('error_message', 'Unknown error')}"
-            )
+            @property
+            def transmat_(self) -> np.ndarray:
+                if self._transitions is None:
+                    raise RuntimeError("Model must be fitted before accessing transmat_")
+                return self._transitions
 
-        except Exception as recovery_error:
-            print(f"❌ Recovery system error: {recovery_error}")
-            raise RuntimeError(
-                f"Autonomous recovery system encountered an error: {recovery_error}. "
-                "Please ensure system permissions and network connectivity."
-            )
+            @property
+            def means_(self) -> np.ndarray:
+                if self._state_means is None:
+                    raise RuntimeError("Model must be fitted before accessing means_")
+                return self._state_means
 
-# Get the HMM class - guaranteed to work
+        return GaussianHMMFallback
+
+
 GaussianHMM = _ensure_hmm()
 
 
@@ -112,7 +125,7 @@ def _validate_inputs(prices: List[float], volumes: List[float] | None) -> np.nda
     schema="./schemas/tool.strategy.regime.detect_states.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception

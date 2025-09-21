@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Get Stream Events",
+  "description": "Retrieve events from a stream buffer",
+  "properties": {
+    "stream_type": {
+      "type": "string",
+      "enum": ["market_data", "trading_signals", "portfolio_updates", "risk_alerts", "compliance_events", "system_metrics"],
+      "description": "Type of stream to get events from"
+    },
+    "max_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 100,
+      "description": "Maximum number of events to retrieve"
+    }
+  },
+  "required": ["stream_type"],
+  "additionalProperties": false
+}

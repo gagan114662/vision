@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Get Pipeline Metrics",
+  "description": "Retrieve streaming pipeline performance metrics",
+  "properties": {
+    "include_buffer_stats": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include detailed buffer statistics"
+    }
+  },
+  "additionalProperties": false
+}

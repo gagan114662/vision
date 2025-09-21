@@ -76,7 +76,7 @@ def _adaptive_smooth(series: np.ndarray, alpha: np.ndarray) -> np.ndarray:
     schema="./schemas/tool.signal.filter.adaptive_noise_reduction.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception

@@ -91,7 +91,7 @@ def _decompose(series: np.ndarray, levels: int) -> Tuple[List[Dict[str, Any]], f
     schema="./schemas/tool.signal.wavelet.multiscale_decomposition.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception

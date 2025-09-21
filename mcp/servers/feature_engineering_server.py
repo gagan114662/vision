@@ -114,7 +114,7 @@ def _default_window(factor_name: str) -> int:
     schema="./schemas/tool.feature-engineering.compute_factor.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception

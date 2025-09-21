@@ -186,7 +186,7 @@ def _structure_markdown(markdown: str) -> List[Dict[str, Any]]:
     schema="./schemas/tool.semtools.parse.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -211,7 +211,7 @@ def semtools_parse(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.semtools.search.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception

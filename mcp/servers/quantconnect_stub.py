@@ -90,7 +90,7 @@ def _coerce_project_id(project_id: str) -> int:
     schema="./schemas/tool.quantconnect.project.sync.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -158,7 +158,7 @@ def _wait_for_compile(project_id: int, compile_id: str, timeout_seconds: float =
     schema="./schemas/tool.quantconnect.backtest.run.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -224,7 +224,7 @@ def _flatten_stats(prefix: str, value: Any, collector: Dict[str, Any]) -> None:
     schema="./schemas/tool.quantconnect.backtest.status.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=5,
         recovery_timeout_seconds=30.0,
         expected_exception=Exception
@@ -260,7 +260,7 @@ def backtest_status(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.quantconnect.backtest.list.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=5,
         recovery_timeout_seconds=30.0,
         expected_exception=Exception
@@ -288,7 +288,7 @@ def backtest_list(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.quantconnect.backtest.delete.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception

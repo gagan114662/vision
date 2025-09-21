@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Publish Stream Event",
+  "description": "Publish an event to the streaming pipeline",
+  "properties": {
+    "stream_type": {
+      "type": "string",
+      "enum": ["market_data", "trading_signals", "portfolio_updates", "risk_alerts", "compliance_events", "system_metrics"],
+      "description": "Type of stream to publish to"
+    },
+    "data": {
+      "type": "object",
+      "description": "Event data payload",
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "string",
+      "default": "unknown",
+      "description": "Source system or component generating the event"
+    },
+    "quality": {
+      "type": "string",
+      "enum": ["real_time", "near_real_time", "delayed"],
+      "default": "real_time",
+      "description": "Quality level of the data"
+    }
+  },
+  "required": ["stream_type", "data"],
+  "additionalProperties": false
+}

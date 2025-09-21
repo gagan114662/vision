@@ -57,7 +57,7 @@ def _detect_cycles(series: np.ndarray, sample_rate: float, top_n: int) -> List[D
     schema="./schemas/tool.signal.fourier.detect_cycles.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=5,
         recovery_timeout_seconds=30.0,
         expected_exception=ValueError

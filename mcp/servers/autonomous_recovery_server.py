@@ -446,7 +446,7 @@ recovery_engine = AutonomousRecoveryEngine()
     schema="./schemas/tool.autonomous.system.diagnose.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -486,7 +486,7 @@ def diagnose_system(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.autonomous.dependency.analyze.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -516,7 +516,7 @@ def analyze_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.autonomous.recovery.execute_strategy.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -547,7 +547,7 @@ def execute_recovery_strategy(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.autonomous.recovery.auto_resolve.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
@@ -629,7 +629,7 @@ def auto_resolve_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
     schema="./schemas/tool.autonomous.recovery.get_history.schema.json",
 )
 @circuit_breaker(
-    CircuitBreakerConfig(
+    config=CircuitBreakerConfig(
         failure_threshold=3,
         recovery_timeout_seconds=60.0,
         expected_exception=Exception
