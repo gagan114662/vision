@@ -448,7 +448,7 @@ recovery_engine = AutonomousRecoveryEngine()
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -488,7 +488,7 @@ def diagnose_system(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -518,7 +518,7 @@ def analyze_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -549,7 +549,7 @@ def execute_recovery_strategy(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -631,7 +631,7 @@ def auto_resolve_dependency(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

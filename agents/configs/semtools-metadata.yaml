@@ -92,6 +92,18 @@ initial_tools:
     latency_budget_ms: 2000
     provenance_required: true
     compliance_tags: ["quantconnect", "model_validation"]
+  - name: quantconnect.backtest.list
+    description: Enumerate QuantConnect backtests for a project (stub until server vendored).
+    cost_estimate: low
+    latency_budget_ms: 2000
+    provenance_required: true
+    compliance_tags: ["quantconnect", "audit"]
+  - name: quantconnect.backtest.delete
+    description: Delete QuantConnect backtest artifacts (stub until server vendored).
+    cost_estimate: low
+    latency_budget_ms: 2000
+    provenance_required: true
+    compliance_tags: ["quantconnect", "ops"]
   - name: semtools.parse
     description: Parse documents using semtools CLI (LlamaIndex semtools).
     cost_estimate: medium

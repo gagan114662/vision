@@ -93,7 +93,7 @@ def _decompose(series: np.ndarray, levels: int) -> Tuple[List[Dict[str, Any]], f
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

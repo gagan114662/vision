@@ -149,6 +149,18 @@ namespaces:
         description: Retrieve QuantConnect backtest status/statistics (stub).
         auth: rbac-token
         signing: optional
+      - id: quantconnect.backtest.list
+        schema: schemas/tool.quantconnect.backtest.list.schema.json
+        response_schema: schemas/tool.quantconnect.backtest.list.response.schema.json
+        description: List historical QuantConnect backtests for a project (stub).
+        auth: rbac-token
+        signing: optional
+      - id: quantconnect.backtest.delete
+        schema: schemas/tool.quantconnect.backtest.delete.schema.json
+        response_schema: schemas/tool.quantconnect.backtest.delete.response.schema.json
+        description: Delete a QuantConnect backtest run (stub).
+        auth: rbac-token
+        signing: optional
   autonomous:
     tools:
       - id: autonomous.system.diagnose

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuantConnectBacktestDeleteRequest",
+  "type": "object",
+  "required": ["project_id", "backtest_id"],
+  "properties": {
+    "project_id": {
+      "type": "string",
+      "description": "QuantConnect project identifier"
+    },
+    "backtest_id": {
+      "type": "string",
+      "description": "Backtest identifier to delete"
+    }
+  },
+  "additionalProperties": false
+}

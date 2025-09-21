@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QuantConnectBacktestDeleteResponse",
+  "type": "object",
+  "required": ["project_id", "backtest_id", "success"],
+  "properties": {
+    "project_id": {
+      "type": "string"
+    },
+    "backtest_id": {
+      "type": "string"
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "message": {
+      "type": "string",
+      "description": "Optional message returned by QuantConnect"
+    }
+  },
+  "additionalProperties": false
+}

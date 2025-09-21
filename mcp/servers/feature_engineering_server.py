@@ -116,7 +116,7 @@ def _default_window(factor_name: str) -> int:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

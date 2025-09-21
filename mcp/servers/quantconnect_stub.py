@@ -92,7 +92,7 @@ def _coerce_project_id(project_id: str) -> int:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -160,7 +160,7 @@ def _wait_for_compile(project_id: int, compile_id: str, timeout_seconds: float =
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -226,7 +226,7 @@ def _flatten_stats(prefix: str, value: Any, collector: Dict[str, Any]) -> None:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=5,
-        recovery_timeout=30.0,
+        recovery_timeout_seconds=30.0,
         expected_exception=Exception
     )
 )
@@ -262,7 +262,7 @@ def backtest_status(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=5,
-        recovery_timeout=30.0,
+        recovery_timeout_seconds=30.0,
         expected_exception=Exception
     )
 )
@@ -290,7 +290,7 @@ def backtest_list(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

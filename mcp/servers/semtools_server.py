@@ -188,7 +188,7 @@ def _structure_markdown(markdown: str) -> List[Dict[str, Any]]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )
@@ -213,7 +213,7 @@ def semtools_parse(params: Dict[str, Any]) -> Dict[str, Any]:
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

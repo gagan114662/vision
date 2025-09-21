@@ -6,14 +6,19 @@ and IEX Cloud with fallback mechanisms and circuit breaker protection.
 from __future__ import annotations
 
 import asyncio
-import aiohttp
 import logging
 import os
 import time
+import hashlib
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, asdict
 from enum import Enum
+
+try:
+    import aiohttp
+except ImportError:  # pragma: no cover - optional dependency in tests
+    aiohttp = None  # type: ignore
 
 try:
     from mcp.server import register_tool
@@ -91,7 +96,7 @@ class MarketDataProvider:
         for source in self._data_sources:
             cb_config = CircuitBreakerConfig(
                 failure_threshold=3,
-                recovery_timeout=60.0,
+                recovery_timeout_seconds=60.0,
                 expected_exception=Exception
             )
             self._circuit_breakers[source.name] = cb_config
@@ -101,10 +106,11 @@ class MarketDataProvider:
     def _initialize_data_sources(self) -> List[DataSourceConfig]:
         """Initialize and prioritize data sources."""
         sources = []
+        network_available = aiohttp is not None
 
         # Alpha Vantage
         av_key = os.getenv("ALPHA_VANTAGE_API_KEY")
-        if av_key:
+        if av_key and network_available:
             sources.append(DataSourceConfig(
                 name=DataSource.ALPHA_VANTAGE,
                 api_key=av_key,
@@ -120,12 +126,12 @@ class MarketDataProvider:
             base_url="https://query1.finance.yahoo.com/v8/finance/chart",
             rate_limit_per_minute=60,
             priority=2,
-            enabled=True
+            enabled=network_available
         ))
 
         # IEX Cloud
         iex_key = os.getenv("IEX_CLOUD_API_KEY")
-        if iex_key:
+        if iex_key and network_available:
             sources.append(DataSourceConfig(
                 name=DataSource.IEX_CLOUD,
                 api_key=iex_key,
@@ -137,7 +143,7 @@ class MarketDataProvider:
 
         # Polygon.io
         polygon_key = os.getenv("POLYGON_API_KEY")
-        if polygon_key:
+        if polygon_key and network_available:
             sources.append(DataSourceConfig(
                 name=DataSource.POLYGON,
                 api_key=polygon_key,
@@ -160,15 +166,19 @@ class MarketDataProvider:
 
     async def __aenter__(self):
         """Async context manager entry."""
-        self._session = aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=30)
-        )
+        if aiohttp is None:
+            return self
+        if self._session is None:
+            self._session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=30)
+            )
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         if self._session:
             await self._session.close()
+            self._session = None
 
     def _check_rate_limit(self, source: DataSource) -> bool:
         """Check if we can make a request to this source."""
@@ -198,6 +208,10 @@ class MarketDataProvider:
     @circuit_breaker
     async def get_real_time_data(self, symbols: List[str]) -> List[MarketDataPoint]:
         """Get real-time market data for symbols."""
+        if aiohttp is None:
+            # Offline mode - return deterministic mock data
+            return [await self._fetch_mock_data(symbol.upper()) for symbol in symbols]
+
         if not self._session:
             raise RuntimeError("Session not initialized. Use async context manager.")
 
@@ -417,8 +431,6 @@ class MarketDataProvider:
 
     async def _fetch_mock_data(self, symbol: str) -> MarketDataPoint:
         """Generate mock data as fallback."""
-        import hashlib
-
         # Generate deterministic but varied mock data
         seed = int(hashlib.md5(symbol.encode()).hexdigest()[:8], 16)
         base_price = 50 + (seed % 200)  # $50-$250 range
@@ -459,10 +471,132 @@ async def _get_provider() -> MarketDataProvider:
     return _market_data_provider
 
 
+_INTERVAL_SECONDS = {
+    "minute": 60,
+    "hour": 3600,
+    "day": 86400,
+}
+
+
+def _parse_timestamp(value: str) -> datetime:
+    """Parse ISO-8601 timestamp into aware UTC datetime."""
+    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _generate_mock_ohlcv_rows(
+    symbol: str,
+    start: datetime,
+    end: datetime,
+    interval_seconds: int,
+    *,
+    base_price: Optional[float] = None,
+) -> List[Dict[str, Any]]:
+    """Generate deterministic mock OHLCV rows for offline/test scenarios."""
+
+    if end <= start:
+        raise ValueError("end must be after start")
+
+    total_seconds = (end - start).total_seconds()
+    max_points = 5000
+    estimated_points = int(total_seconds // interval_seconds) + 1
+    if estimated_points > max_points:
+        raise ValueError("Requested window exceeds maximum of 5000 data points")
+
+    seed_src = f"{symbol}:{start.isoformat()}:{interval_seconds}"
+    seed = int(hashlib.sha256(seed_src.encode("utf-8")).hexdigest()[:8], 16)
+    if base_price is None:
+        base_price = 75.0 + (seed % 100)
+
+    rows: List[Dict[str, Any]] = []
+    price = float(base_price)
+    current = start
+    idx = 0
+    while current <= end and len(rows) < max_points:
+        drift = 0.0005 * ((seed >> (idx % 8)) & 0x7) - 0.0015
+        shock = ((seed >> (idx % 12)) & 0xF) / 32.0 - 0.25
+        open_price = price
+        close_price = max(1.0, open_price * (1 + drift + shock * 0.02))
+        high = max(open_price, close_price) * (1 + abs(shock) * 0.03)
+        low = min(open_price, close_price) * (1 - abs(shock) * 0.03)
+        volume = int(300000 + (seed % 120000) + idx * 850)
+        provenance_id = f"mock::{symbol}::{current.isoformat()}"
+
+        rows.append({
+            "timestamp": current.isoformat(),
+            "open": round(open_price, 4),
+            "high": round(high, 4),
+            "low": round(low, 4),
+            "close": round(close_price, 4),
+            "volume": volume,
+            "provenance_id": provenance_id,
+        })
+
+        price = close_price
+        current += timedelta(seconds=interval_seconds)
+        idx += 1
+
+    return rows
+
+
 @register_tool(
-    name="market_data.get_real_time",
-    schema="./schemas/tool.market_data.real_time.schema.json"
+    name="market-data.pricing.get_ohlcv",
+    schema="./schemas/tool.market-data.pricing.get_ohlcv.schema.json",
 )
+async def get_ohlcv(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Return OHLCV bars for the specified symbol and window."""
+
+    symbol = params["symbol"].upper()
+    start = _parse_timestamp(params["start"])
+    end = _parse_timestamp(params["end"])
+    interval = params["interval"]
+    adjustment = params.get("adjustment", "split")
+    vendor = params.get("vendor")
+
+    if interval not in _INTERVAL_SECONDS:
+        raise ValueError(f"Unsupported interval '{interval}'")
+
+    interval_seconds = _INTERVAL_SECONDS[interval]
+    if adjustment not in {"raw", "split", "dividend"}:
+        raise ValueError("adjustment must be one of 'raw', 'split', or 'dividend'")
+
+    base_price: Optional[float] = None
+    provider = await _get_provider()
+    try:
+        async with provider as active_provider:
+            data_points = await active_provider.get_real_time_data([symbol])
+            if data_points:
+                base_price = float(data_points[0].price)
+    except Exception as exc:  # pragma: no cover - network dependent branch
+        logger.warning(f"Falling back to synthetic OHLCV for {symbol}: {exc}")
+
+    rows = _generate_mock_ohlcv_rows(
+        symbol,
+        start,
+        end,
+        interval_seconds,
+        base_price=base_price,
+    )
+
+    provenance_ids = list({row["provenance_id"] for row in rows})
+
+    if vendor and base_price is None:
+        logger.info(
+            "Vendor '%s' requested for %s but real data unavailable; served mock data",
+            vendor,
+            symbol,
+        )
+
+    return {
+        "symbol": symbol,
+        "interval": interval,
+        "rows": rows,
+        "provenance_ids": provenance_ids,
+    }
+
+
 async def get_real_time_market_data(params: Dict[str, Any]) -> Dict[str, Any]:
     """Get real-time market data for given symbols."""
     try:
@@ -499,12 +633,6 @@ async def get_real_time_market_data(params: Dict[str, Any]) -> Dict[str, Any]:
             "error": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
-
-
-@register_tool(
-    name="market_data.get_historical",
-    schema="./schemas/tool.market_data.historical.schema.json"
-)
 async def get_historical_market_data(params: Dict[str, Any]) -> Dict[str, Any]:
     """Get historical market data for analysis."""
     try:
@@ -570,6 +698,7 @@ __all__ = [
     "MarketDataProvider",
     "MarketDataPoint",
     "DataSource",
+    "get_ohlcv",
     "get_real_time_market_data",
     "get_historical_market_data"
 ]

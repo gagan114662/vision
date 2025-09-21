@@ -42,7 +42,7 @@ def _filter_insights(insights: List[Dict[str, Any]], params: Dict[str, Any]) -> 
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

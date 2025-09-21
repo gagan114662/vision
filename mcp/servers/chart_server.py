@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from mcp.server import register_tool
 
@@ -81,8 +81,15 @@ def _ensure_matplotlib():
 
     raise RuntimeError("Unexpected error in matplotlib dependency resolution")
 
-# Get matplotlib - guaranteed to work
-plt = _ensure_matplotlib()
+_MATPLOTLIB: Optional[Any] = None
+
+
+def _get_matplotlib():
+    """Lazily load matplotlib to avoid heavy import side effects."""
+    global _MATPLOTLIB
+    if _MATPLOTLIB is None:
+        _MATPLOTLIB = _ensure_matplotlib()
+    return _MATPLOTLIB
 
 OUTPUT_DIR = Path("visualizations")
 
@@ -92,6 +99,7 @@ def _ensure_output_dir() -> None:
 
 
 def _render_chart(prices: List[Dict[str, Any]], signals: List[Dict[str, Any]], title: str, output_path: Path) -> List[str]:
+    plt = _get_matplotlib()
     warnings: List[str] = []
 
     timestamps = [datetime.fromisoformat(p["timestamp"].replace("Z", "+00:00")) for p in prices]
@@ -127,7 +135,7 @@ def _render_chart(prices: List[Dict[str, Any]], signals: List[Dict[str, Any]], t
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=3,
-        recovery_timeout=60.0,
+        recovery_timeout_seconds=60.0,
         expected_exception=Exception
     )
 )

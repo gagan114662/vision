@@ -59,7 +59,7 @@ def _detect_cycles(series: np.ndarray, sample_rate: float, top_n: int) -> List[D
 @circuit_breaker(
     CircuitBreakerConfig(
         failure_threshold=5,
-        recovery_timeout=30.0,
+        recovery_timeout_seconds=30.0,
         expected_exception=ValueError
     )
 )

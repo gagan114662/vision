@@ -83,6 +83,8 @@ class TestDocumentationIntegrity(unittest.TestCase):
             "quantconnect.project.sync",
             "quantconnect.backtest.run",
             "quantconnect.backtest.status",
+            "quantconnect.backtest.list",
+            "quantconnect.backtest.delete",
         }
         self.assertTrue(expected_tools.issubset(tool_names))
 
@@ -166,7 +168,9 @@ class TestDocumentationIntegrity(unittest.TestCase):
         self.assertTrue({
             "quantconnect.project.sync",
             "quantconnect.backtest.run",
-            "quantconnect.backtest.status"
+            "quantconnect.backtest.status",
+            "quantconnect.backtest.list",
+            "quantconnect.backtest.delete",
         }.issubset(quantconnect_tools))
 
     def test_run_backtest_schema_required_fields(self) -> None:
