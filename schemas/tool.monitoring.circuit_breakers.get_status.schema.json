@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Get Circuit Breaker Status",
+  "description": "Retrieve status and statistics for all circuit breakers in the system",
+  "properties": {
+    "include_detailed_stats": {
+      "type": "boolean",
+      "description": "Include detailed statistics for each circuit breaker",
+      "default": true
+    },
+    "filter_state": {
+      "type": "string",
+      "enum": ["open", "closed", "half_open"],
+      "description": "Filter circuit breakers by their current state"
+    }
+  },
+  "additionalProperties": false
+}

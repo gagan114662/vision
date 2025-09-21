@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from mcp.server import register_tool
@@ -17,8 +18,19 @@ logger = logging.getLogger(__name__)
 def get_circuit_breaker_status(params: Dict[str, Any]) -> Dict[str, Any]:
     """Get status of all circuit breakers in the system."""
 
+    # Extract request parameters
+    include_detailed_stats = params.get("include_detailed_stats", True)
+    filter_state = params.get("filter_state")  # None, "open", "closed", "half_open"
+
     # Get all circuit breaker statistics
-    stats = get_all_circuit_breaker_stats()
+    all_stats = get_all_circuit_breaker_stats()
+
+    # Apply state filter if specified
+    if filter_state:
+        stats = [s for s in all_stats if s["state"] == filter_state]
+        logger.info(f"Filtered circuit breakers by state '{filter_state}': {len(stats)}/{len(all_stats)}")
+    else:
+        stats = all_stats
 
     # Calculate summary metrics
     total_breakers = len(stats)
@@ -45,8 +57,11 @@ def get_circuit_breaker_status(params: Dict[str, Any]) -> Dict[str, Any]:
         if s["state"] in ["open", "half_open"] or s["failure_rate_percent"] > 20
     ]
 
+    # Generate current timestamp
+    current_timestamp = datetime.now(timezone.utc).isoformat()
+
     result = {
-        "timestamp": "2025-09-21T17:35:00Z",  # Current timestamp
+        "timestamp": current_timestamp,
         "summary": {
             "total_circuit_breakers": total_breakers,
             "health_status": health_status,
@@ -57,7 +72,7 @@ def get_circuit_breaker_status(params: Dict[str, Any]) -> Dict[str, Any]:
                 "half_open": half_open_breakers
             }
         },
-        "circuit_breakers": stats,
+        "circuit_breakers": stats if include_detailed_stats else [],
         "alerts": [
             {
                 "type": "circuit_open",
