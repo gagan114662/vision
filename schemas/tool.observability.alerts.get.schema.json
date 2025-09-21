@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Get System Alerts",
+  "description": "Retrieve system alerts with optional filtering",
+  "properties": {
+    "level": {
+      "type": "string",
+      "enum": ["info", "warning", "error", "critical"],
+      "description": "Filter alerts by severity level"
+    },
+    "resolved": {
+      "type": "boolean",
+      "description": "Filter alerts by resolution status"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000,
+      "default": 100,
+      "description": "Maximum number of alerts to return"
+    }
+  },
+  "additionalProperties": false
+}

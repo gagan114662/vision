@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Record Performance Metric",
+  "description": "Record a performance metric for monitoring and analysis",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the metric (e.g., 'agent.analysis.duration_ms')"
+    },
+    "value": {
+      "type": "number",
+      "description": "Numeric value of the metric"
+    },
+    "metric_type": {
+      "type": "string",
+      "enum": ["counter", "gauge", "histogram", "timer"],
+      "default": "gauge",
+      "description": "Type of metric being recorded"
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Optional labels for metric categorization"
+    }
+  },
+  "required": ["name", "value"],
+  "additionalProperties": false
+}
