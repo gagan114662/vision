@@ -11,9 +11,15 @@ from typing import Dict, Any, List
 import sys
 import json
 from datetime import datetime
+import os
+from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, '/Users/gagan/Desktop/gagan_projects/chat')
+if os.environ.get('GITHUB_ACTIONS'):
+    project_root = os.environ.get('GITHUB_WORKSPACE', os.getcwd())
+else:
+    project_root = os.getcwd()
+sys.path.insert(0, str(project_root))
 
 from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig, CircuitBreaker
 from mcp.servers.market_data_server import RealMarketDataProvider

@@ -171,7 +171,8 @@ jobs:
   backtest-validation:
     runs-on: ubuntu-latest
     name: Backtest Validation
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Run on main branch pushes and PRs (with mock for PRs)
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
 
     steps:
       - uses: actions/checkout@v3
@@ -189,14 +190,30 @@ jobs:
       - name: Setup Docker
         uses: docker/setup-buildx-action@v2
 
-      - name: Run Real QuantConnect Backtest Validation
+      - name: Determine validation mode
+        id: validation_mode
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" && "${{ github.event.pull_request.head.repo.fork }}" == "true" ]]; then
+            echo "MODE=mock" >> $GITHUB_OUTPUT
+            echo "Running in forked PR mode - will use mock validation"
+          elif [[ -n "${{ secrets.QC_USER_ID }}" && -n "${{ secrets.QC_API_TOKEN }}" ]]; then
+            echo "MODE=real" >> $GITHUB_OUTPUT
+            echo "Running with real QuantConnect credentials"
+          else
+            echo "MODE=mock" >> $GITHUB_OUTPUT
+            echo "No credentials available - using mock validation"
+          fi
+
+      - name: Run QuantConnect Backtest Validation
         env:
           QC_USER_ID: ${{ secrets.QC_USER_ID }}
           QC_API_TOKEN: ${{ secrets.QC_API_TOKEN }}
           QUANTCONNECT_USER_ID: ${{ secrets.QC_USER_ID }}
           QUANTCONNECT_API_TOKEN: ${{ secrets.QC_API_TOKEN }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          VALIDATION_MODE: ${{ steps.validation_mode.outputs.MODE }}
         run: |
-          echo "Running real QuantConnect backtest validation..."
+          echo "Validation mode: $VALIDATION_MODE"
           python test_quantconnect_real_backtest.py
 
       - name: Verify Non-Synthetic Results
