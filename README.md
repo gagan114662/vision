@@ -31,7 +31,7 @@ It streams responses in real-time, executes tools one at a time, and maintains c
 
 ## 📂 Project Structure
 
-~
+~~~~
 termnet/
 ├── agent.py          # Core TermNetAgent: manages chat loop, tool calls, and LLM streaming
 ├── main.py           # CLI entrypoint for running the agent
@@ -44,7 +44,7 @@ termnet/
 ├── browsersearch.py  # Browser search & scraping tool (Playwright + BeautifulSoup)
 ├── scratchpad.py     # Note-taking / planning scratchpad
 ├── terminal.py       # Terminal session wrapper with safety & timeout handling
-~
+~~~~
 
 ---
 
@@ -60,22 +60,22 @@ termnet/
 
 1. Clone the repository:
 
-   ~bash
-   git clone https://github.com/RawdogReverend/termnet.git
+   ~~~~bash
+   git clone https://github.com/RawdodReverend/TermNet.git
    cd termnet
-   ~
+   ~~~~
 
 2. Install dependencies:
 
-   ~bash
+   ~~~~bash
    pip install -r requirements.txt
-   ~
+   ~~~~
 
 3. Install Playwright browser binaries:
 
-   ~bash
+   ~~~~bash
    playwright install chromium
-   ~
+   ~~~~
 
 ---
 
@@ -85,29 +85,29 @@ You can start TermNet in two ways:
 
 ### Directly with Python
 
-~bash
+~~~~bash
 python -m termnet.main
-~
+~~~~
 
 or (depending on your system):
 
-~bash
+~~~~bash
 python3 -m termnet.main
-~
+~~~~
 
 ### With the provided script
 
 On Linux/macOS:
 
-~bash
+~~~~bash
 ./run.sh
-~
+~~~~
 
 On Windows:
 
-~bat
+~~~~bat
 run.bat
-~
+~~~~
 
 ### Chatting
 
@@ -118,9 +118,9 @@ run.bat
   - Use custom tools defined in `toolregistry.json`
 - Exit at any time with:
 
-~bash
+~~~~bash
 exit
-~
+~~~~
 
 ---
 
@@ -152,7 +152,7 @@ Tools are defined in `toolregistry.json` and implemented in `termnet/tools/`.
 ### 1. Register the tool
 Add a new JSON entry in `toolregistry.json`:
 
-~json
+~~~~json
 {
   "type": "function",
   "function": {
@@ -170,23 +170,23 @@ Add a new JSON entry in `toolregistry.json`:
     }
   }
 }
-~
+~~~~
 
 ### 2. Implement the tool
 Create `termnet/tools/mytool.py`:
 
-~python
+~~~~python
 class MyTool:
     async def run(self, arg1: str):
         return f"Tool executed with arg1={arg1}"
-~
+~~~~
 
 ### 3. Run TermNet
 The tool will auto-load at startup:
 
-~bash
+~~~~bash
 python -m termnet.main
-~
+~~~~
 
 ✅ No need to edit the agent itself — tools are discovered dynamically.
 
