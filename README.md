@@ -4,6 +4,7 @@ TermNet is an **AI-powered terminal assistant** that connects a Large Language M
 It streams responses in real-time, executes tools one at a time, and maintains conversational memory across steps.
 
 ⚠️ **Disclaimer:** This project is experimental. **Use at your own risk.**
+⚠️ **Note:** This has only been tested with GPT-OSS Models. **Your models may behave differently.**
 
 ---
 
