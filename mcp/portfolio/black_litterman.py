@@ -300,17 +300,25 @@ class BlackLittermanOptimizer:
     def __init__(self, parameters: BlackLittermanParameters):
         self.parameters = parameters
         self.view_aggregator = AgentViewAggregator(parameters)
+        self._agent_integrator = AgentViewIntegrator()
 
     def optimize(
         self,
         returns: pd.DataFrame,
         agent_views: List[AgentView],
         market_caps: Optional[Dict[str, float]] = None,
-        custom_equilibrium: Optional[Dict[str, float]] = None
+        custom_equilibrium: Optional[Dict[str, float]] = None,
+        agent_outputs: Optional[Dict[str, Any]] = None
     ) -> BlackLittermanResults:
         """Perform Black-Litterman optimization with agent views."""
         try:
             logger.info(f"Starting Black-Litterman optimization with {len(agent_views)} views")
+
+            # Integrate real-time agent outputs if provided
+            if agent_outputs:
+                real_time_views = self._agent_integrator.register_agent_views(agent_outputs)
+                agent_views.extend(real_time_views)
+                logger.info(f"Added {len(real_time_views)} real-time agent views")
 
             # Prepare data
             assets = returns.columns.tolist()
@@ -558,6 +566,249 @@ class BlackLittermanOptimizer:
         return view_contributions
 
 
+class AgentViewIntegrator:
+    """Integration layer for real-time agent views from trading agents."""
+
+    def __init__(self):
+        self._cached_views: Dict[str, AgentView] = {}
+        self._view_history: List[AgentView] = []
+
+    def register_agent_views(self, agent_outputs: Dict[str, Any]) -> List[AgentView]:
+        """Convert agent outputs to standardized AgentView objects."""
+        views = []
+
+        # Process fundamental agent views
+        if 'fundamental_agent' in agent_outputs:
+            fundamental_views = self._process_fundamental_views(agent_outputs['fundamental_agent'])
+            views.extend(fundamental_views)
+
+        # Process technical agent views
+        if 'technical_agent' in agent_outputs:
+            technical_views = self._process_technical_views(agent_outputs['technical_agent'])
+            views.extend(technical_views)
+
+        # Process sentiment agent views
+        if 'sentiment_agent' in agent_outputs:
+            sentiment_views = self._process_sentiment_views(agent_outputs['sentiment_agent'])
+            views.extend(sentiment_views)
+
+        # Process quantitative agent views
+        if 'quantitative_agent' in agent_outputs:
+            quant_views = self._process_quantitative_views(agent_outputs['quantitative_agent'])
+            views.extend(quant_views)
+
+        # Cache and track views
+        for view in views:
+            self._cached_views[view.view_id] = view
+            self._view_history.append(view)
+
+        # Prune old views (keep last 1000)
+        if len(self._view_history) > 1000:
+            self._view_history = self._view_history[-1000:]
+
+        logger.info(f"Registered {len(views)} new agent views")
+        return views
+
+    def _process_fundamental_views(self, fundamental_output: Dict[str, Any]) -> List[AgentView]:
+        """Process fundamental agent analysis into views."""
+        views = []
+
+        if 'stock_analysis' in fundamental_output:
+            for symbol, analysis in fundamental_output['stock_analysis'].items():
+                # Convert fundamental rating to expected return
+                rating = analysis.get('recommendation', 'HOLD')
+                expected_return = self._rating_to_return(rating)
+
+                # Convert confidence score to enum
+                confidence_score = analysis.get('confidence', 0.5)
+                confidence = self._score_to_confidence(confidence_score)
+
+                view = AgentView(
+                    view_id=f"fund_{symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    agent_source="fundamental",
+                    view_type=ViewType.ABSOLUTE_RETURN,
+                    assets=[symbol],
+                    expected_return=expected_return,
+                    confidence=confidence,
+                    time_horizon=90,  # 3 months for fundamental views
+                    rationale=analysis.get('rationale', 'Fundamental analysis'),
+                    sector=analysis.get('sector'),
+                    factor_exposure=analysis.get('factor_exposure', {})
+                )
+                views.append(view)
+
+        return views
+
+    def _process_technical_views(self, technical_output: Dict[str, Any]) -> List[AgentView]:
+        """Process technical agent signals into views."""
+        views = []
+
+        if 'signals' in technical_output:
+            for symbol, signal_data in technical_output['signals'].items():
+                signal_strength = signal_data.get('signal_strength', 0.0)
+                signal_direction = signal_data.get('direction', 'neutral')
+
+                # Convert signal to expected return
+                if signal_direction == 'bullish':
+                    expected_return = abs(signal_strength) * 0.15  # Scale to reasonable return
+                elif signal_direction == 'bearish':
+                    expected_return = -abs(signal_strength) * 0.15
+                else:
+                    expected_return = 0.0
+
+                # Technical signals typically have medium confidence and shorter horizon
+                confidence = ConfidenceLevel.MEDIUM
+                if abs(signal_strength) > 0.7:
+                    confidence = ConfidenceLevel.HIGH
+                elif abs(signal_strength) < 0.3:
+                    confidence = ConfidenceLevel.LOW
+
+                view = AgentView(
+                    view_id=f"tech_{symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    agent_source="technical",
+                    view_type=ViewType.ABSOLUTE_RETURN,
+                    assets=[symbol],
+                    expected_return=expected_return,
+                    confidence=confidence,
+                    time_horizon=30,  # 1 month for technical views
+                    rationale=signal_data.get('rationale', 'Technical analysis signal'),
+                    weight=abs(signal_strength)
+                )
+                views.append(view)
+
+        return views
+
+    def _process_sentiment_views(self, sentiment_output: Dict[str, Any]) -> List[AgentView]:
+        """Process sentiment agent analysis into views."""
+        views = []
+
+        if 'sentiment_scores' in sentiment_output:
+            for symbol, sentiment_data in sentiment_output['sentiment_scores'].items():
+                sentiment_score = sentiment_data.get('composite_score', 0.0)
+
+                # Convert sentiment score to expected return
+                # Sentiment scores typically range from -1 to 1
+                expected_return = sentiment_score * 0.10  # Scale to 10% max impact
+
+                # Sentiment confidence based on data quality
+                data_quality = sentiment_data.get('data_quality', 0.5)
+                confidence = self._score_to_confidence(data_quality)
+
+                view = AgentView(
+                    view_id=f"sent_{symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    agent_source="sentiment",
+                    view_type=ViewType.ABSOLUTE_RETURN,
+                    assets=[symbol],
+                    expected_return=expected_return,
+                    confidence=confidence,
+                    time_horizon=14,  # 2 weeks for sentiment views
+                    rationale=sentiment_data.get('summary', 'Market sentiment analysis'),
+                    weight=data_quality
+                )
+                views.append(view)
+
+        return views
+
+    def _process_quantitative_views(self, quant_output: Dict[str, Any]) -> List[AgentView]:
+        """Process quantitative agent models into views."""
+        views = []
+
+        # Process factor model predictions
+        if 'factor_predictions' in quant_output:
+            for symbol, prediction in quant_output['factor_predictions'].items():
+                expected_return = prediction.get('expected_return', 0.0)
+                prediction_confidence = prediction.get('confidence', 0.5)
+
+                confidence = self._score_to_confidence(prediction_confidence)
+
+                view = AgentView(
+                    view_id=f"quant_{symbol}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    agent_source="quantitative",
+                    view_type=ViewType.ABSOLUTE_RETURN,
+                    assets=[symbol],
+                    expected_return=expected_return,
+                    confidence=confidence,
+                    time_horizon=60,  # 2 months for quant views
+                    rationale=prediction.get('model_explanation', 'Quantitative factor model'),
+                    factor_exposure=prediction.get('factor_exposures', {})
+                )
+                views.append(view)
+
+        # Process relative value opportunities
+        if 'pairs_trading' in quant_output:
+            for pair_id, pair_data in quant_output['pairs_trading'].items():
+                asset_a, asset_b = pair_data['assets']
+                spread_prediction = pair_data.get('spread_prediction', 0.0)
+
+                view = AgentView(
+                    view_id=f"quant_pair_{pair_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+                    agent_source="quantitative",
+                    view_type=ViewType.RELATIVE_RETURN,
+                    assets=[asset_a, asset_b],
+                    expected_return=spread_prediction,
+                    confidence=ConfidenceLevel.MEDIUM,
+                    time_horizon=45,
+                    rationale=pair_data.get('rationale', 'Statistical arbitrage opportunity')
+                )
+                views.append(view)
+
+        return views
+
+    def _rating_to_return(self, rating: str) -> float:
+        """Convert fundamental rating to expected return."""
+        rating_map = {
+            'STRONG_BUY': 0.20,
+            'BUY': 0.10,
+            'HOLD': 0.0,
+            'SELL': -0.10,
+            'STRONG_SELL': -0.20
+        }
+        return rating_map.get(rating.upper(), 0.0)
+
+    def _score_to_confidence(self, score: float) -> ConfidenceLevel:
+        """Convert numeric confidence score to ConfidenceLevel enum."""
+        if score >= 0.8:
+            return ConfidenceLevel.VERY_HIGH
+        elif score >= 0.6:
+            return ConfidenceLevel.HIGH
+        elif score >= 0.4:
+            return ConfidenceLevel.MEDIUM
+        elif score >= 0.2:
+            return ConfidenceLevel.LOW
+        else:
+            return ConfidenceLevel.VERY_LOW
+
+    def get_active_views(self, max_age_hours: int = 24) -> List[AgentView]:
+        """Get all active views within the specified age limit."""
+        cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+
+        active_views = [
+            view for view in self._view_history
+            if view.created_at >= cutoff_time
+        ]
+
+        return active_views
+
+    def get_view_statistics(self) -> Dict[str, Any]:
+        """Get statistics about registered views."""
+        if not self._view_history:
+            return {"total_views": 0}
+
+        agent_counts = {}
+        view_type_counts = {}
+
+        for view in self._view_history:
+            agent_counts[view.agent_source] = agent_counts.get(view.agent_source, 0) + 1
+            view_type_counts[view.view_type.value] = view_type_counts.get(view.view_type.value, 0) + 1
+
+        return {
+            "total_views": len(self._view_history),
+            "agent_breakdown": agent_counts,
+            "view_type_breakdown": view_type_counts,
+            "cached_views": len(self._cached_views)
+        }
+
+
 __all__ = [
     "BlackLittermanOptimizer",
     "AgentView",
@@ -567,5 +818,6 @@ __all__ = [
     "ConfidenceLevel",
     "EquilibriumCalculator",
     "ViewMatrixBuilder",
-    "AgentViewAggregator"
+    "AgentViewAggregator",
+    "AgentViewIntegrator"
 ]

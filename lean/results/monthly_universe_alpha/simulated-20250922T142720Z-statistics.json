@@ -1,0 +1,6 @@
+{
+  "Project": "monthly_universe_alpha",
+  "GeneratedAt": "20250922T142720Z",
+  "Parameters": {},
+  "Note": "Simulated backtest due to: Missing required environment variables: QUANTCONNECT_USER_ID, QUANTCONNECT_API_TOKEN"
+}

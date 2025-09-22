@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AutonomousRecoveryGetHistoryResponse",
+  "type": "object",
+  "required": ["history", "total_records", "filtered_records", "strategy_success_rates"],
+  "properties": {
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "total_records": {"type": "integer", "minimum": 0},
+    "filtered_records": {"type": "integer", "minimum": 0},
+    "strategy_success_rates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    }
+  },
+  "additionalProperties": false
+}

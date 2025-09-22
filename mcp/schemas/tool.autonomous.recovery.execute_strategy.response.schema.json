@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AutonomousRecoveryExecuteStrategyResponse",
+  "type": "object",
+  "required": ["package_name", "strategy", "success", "execution_time"],
+  "properties": {
+    "package_name": {"type": "string"},
+    "strategy": {"type": "string"},
+    "success": {"type": "boolean"},
+    "error_message": {"type": ["string", "null"]},
+    "execution_time": {"type": "number"},
+    "import_verified": {"type": "boolean"},
+    "verification_error": {"type": "string"}
+  },
+  "additionalProperties": false
+}
