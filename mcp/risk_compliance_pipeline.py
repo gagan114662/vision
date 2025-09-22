@@ -422,7 +422,7 @@ class RiskCompliancePipeline:
         trade_data: Dict[str, Any],
         portfolio_context: Dict[str, Any] = None
     ) -> ComplianceCheckResult:
-        """Perform comprehensive compliance check."""
+        """Perform comprehensive compliance check using hardened compliance server."""
         check_id = str(uuid.uuid4())
         timestamp = datetime.now(timezone.utc)
 
@@ -430,24 +430,79 @@ class RiskCompliancePipeline:
         warnings = []
         rules_checked = []
 
-        for rule in self.compliance_rules:
-            if not rule.enabled:
-                continue
+        try:
+            # Use hardened compliance server for production-grade compliance checking
+            from mcp.servers.hardened_compliance_server import log_compliance_event, generate_regulatory_report
 
-            rules_checked.append(rule.rule_id)
+            # Log the compliance check event for audit trail
+            event_params = {
+                "event_id": f"compliance_check_{check_id}",
+                "timestamp": timestamp.isoformat(),
+                "event_type": "trade_compliance_check",
+                "portfolio_id": trade_data.get("portfolio_id", "unknown"),
+                "rule_id": "trading_rules_validation",
+                "status": "in_progress",
+                "details": {
+                    "trade_data": trade_data,
+                    "portfolio_context": portfolio_context or {}
+                }
+            }
 
-            try:
-                # Execute compliance check
-                check_result = await self._execute_compliance_check(rule, trade_data, portfolio_context)
+            # Log event to immutable audit chain
+            await log_compliance_event(event_params)
 
-                if check_result.get("violation"):
-                    violations.append(f"{rule.rule_name}: {check_result['message']}")
-                elif check_result.get("warning"):
-                    warnings.append(f"{rule.rule_name}: {check_result['message']}")
+            # Perform traditional rule checks but with audit logging
+            for rule in self.compliance_rules:
+                if not rule.enabled:
+                    continue
 
-            except Exception as e:
-                logger.error(f"Compliance check failed for rule {rule.rule_id}: {e}")
-                warnings.append(f"{rule.rule_name}: Check failed - {str(e)}")
+                rules_checked.append(rule.rule_id)
+
+                try:
+                    # Execute compliance check
+                    check_result = await self._execute_compliance_check(rule, trade_data, portfolio_context)
+
+                    if check_result.get("violation"):
+                        violations.append(f"{rule.rule_name}: {check_result['message']}")
+                        # Log violation event
+                        violation_event = {
+                            "event_id": f"violation_{rule.rule_id}_{check_id}",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                            "event_type": "compliance_violation",
+                            "portfolio_id": trade_data.get("portfolio_id", "unknown"),
+                            "rule_id": rule.rule_id,
+                            "status": "violation",
+                            "details": {"violation_message": check_result['message']}
+                        }
+                        await log_compliance_event(violation_event)
+
+                    elif check_result.get("warning"):
+                        warnings.append(f"{rule.rule_name}: {check_result['message']}")
+
+                except Exception as e:
+                    logger.error(f"Compliance check failed for rule {rule.rule_id}: {e}")
+                    warnings.append(f"{rule.rule_name}: Check failed - {str(e)}")
+
+        except ImportError:
+            logger.warning("Hardened compliance server not available, falling back to basic compliance")
+            # Fallback to basic rule processing
+            for rule in self.compliance_rules:
+                if not rule.enabled:
+                    continue
+
+                rules_checked.append(rule.rule_id)
+
+                try:
+                    check_result = await self._execute_compliance_check(rule, trade_data, portfolio_context)
+
+                    if check_result.get("violation"):
+                        violations.append(f"{rule.rule_name}: {check_result['message']}")
+                    elif check_result.get("warning"):
+                        warnings.append(f"{rule.rule_name}: {check_result['message']}")
+
+                except Exception as e:
+                    logger.error(f"Compliance check failed for rule {rule.rule_id}: {e}")
+                    warnings.append(f"{rule.rule_name}: Check failed - {str(e)}")
 
         # Determine overall status
         if violations:

@@ -22,6 +22,23 @@ try:
 except ImportError:  # pragma: no cover - optional dependency
     psutil = None  # type: ignore
 
+# Optional dependencies for external observability
+try:
+    from opentelemetry import trace
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.sdk.resources import Resource
+    JAEGER_AVAILABLE = True
+except ImportError:
+    JAEGER_AVAILABLE = False
+
+try:
+    from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry, push_to_gateway
+    PROMETHEUS_AVAILABLE = True
+except ImportError:
+    PROMETHEUS_AVAILABLE = False
+
 try:
     from mcp.server import register_tool
     from mcp.common.resilience import circuit_breaker, CircuitBreakerConfig
@@ -95,6 +112,119 @@ class PerformanceBaseline:
     created_at: datetime
 
 
+class ExternalObservability:
+    """Handles external observability integrations (Jaeger, Prometheus)."""
+
+    def __init__(self):
+        self.jaeger_enabled = False
+        self.prometheus_enabled = False
+        self.tracer = None
+        self.prometheus_registry = None
+        self.prometheus_metrics = {}
+
+        # Initialize Jaeger if available
+        if JAEGER_AVAILABLE:
+            self._setup_jaeger()
+
+        # Initialize Prometheus if available
+        if PROMETHEUS_AVAILABLE:
+            self._setup_prometheus()
+
+    def _setup_jaeger(self):
+        """Setup Jaeger tracing"""
+        try:
+            jaeger_endpoint = "http://localhost:14268/api/traces"  # Default Jaeger endpoint
+
+            resource = Resource.create({"service.name": "trading-system-mcp"})
+            trace.set_tracer_provider(TracerProvider(resource=resource))
+
+            jaeger_exporter = JaegerExporter(
+                agent_host_name="localhost",
+                agent_port=6831,
+            )
+
+            span_processor = BatchSpanProcessor(jaeger_exporter)
+            trace.get_tracer_provider().add_span_processor(span_processor)
+
+            self.tracer = trace.get_tracer(__name__)
+            self.jaeger_enabled = True
+            logger.info("Jaeger tracing initialized successfully")
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize Jaeger: {e}")
+
+    def _setup_prometheus(self):
+        """Setup Prometheus metrics"""
+        try:
+            self.prometheus_registry = CollectorRegistry()
+
+            # Create common metrics
+            self.prometheus_metrics = {
+                'operation_duration': Histogram(
+                    'trading_operation_duration_seconds',
+                    'Duration of trading operations',
+                    ['operation', 'service'],
+                    registry=self.prometheus_registry
+                ),
+                'operation_count': Counter(
+                    'trading_operation_total',
+                    'Total trading operations',
+                    ['operation', 'service', 'status'],
+                    registry=self.prometheus_registry
+                ),
+                'system_resource': Gauge(
+                    'trading_system_resource_usage',
+                    'System resource usage',
+                    ['resource_type'],
+                    registry=self.prometheus_registry
+                )
+            }
+
+            self.prometheus_enabled = True
+            logger.info("Prometheus metrics initialized successfully")
+
+        except Exception as e:
+            logger.warning(f"Failed to initialize Prometheus: {e}")
+
+    def create_span(self, operation_name: str, **tags):
+        """Create a distributed trace span"""
+        if self.jaeger_enabled and self.tracer:
+            span = self.tracer.start_span(operation_name)
+            for key, value in tags.items():
+                span.set_attribute(key, str(value))
+            return span
+        return None
+
+    def record_prometheus_metric(self, metric_name: str, value: float, labels: Dict[str, str] = None):
+        """Record a Prometheus metric"""
+        if not self.prometheus_enabled:
+            return
+
+        labels = labels or {}
+
+        try:
+            if metric_name in self.prometheus_metrics:
+                metric = self.prometheus_metrics[metric_name]
+
+                if hasattr(metric, 'observe'):  # Histogram
+                    metric.labels(**labels).observe(value)
+                elif hasattr(metric, 'inc'):  # Counter
+                    metric.labels(**labels).inc(value)
+                elif hasattr(metric, 'set'):  # Gauge
+                    metric.labels(**labels).set(value)
+
+        except Exception as e:
+            logger.warning(f"Failed to record Prometheus metric {metric_name}: {e}")
+
+    def push_to_prometheus_gateway(self, gateway_url: str = "localhost:9091", job_name: str = "trading-mcp"):
+        """Push metrics to Prometheus pushgateway"""
+        if self.prometheus_enabled and self.prometheus_registry:
+            try:
+                push_to_gateway(gateway_url, job=job_name, registry=self.prometheus_registry)
+            except Exception as e:
+                logger.warning(f"Failed to push to Prometheus gateway: {e}")
+
+
 class MetricsCollector:
     """Collects and stores performance metrics."""
 
@@ -115,6 +245,9 @@ class MetricsCollector:
 
         # Performance tracking
         self._operation_timers: Dict[str, List[float]] = defaultdict(list)
+
+        # External observability integration
+        self.external_observability = ExternalObservability()
 
         # Start background collection
         self._collection_task = None
@@ -157,11 +290,42 @@ class MetricsCollector:
 
             self._metrics[name][metric_type].append(point)
 
+            # Send to external observability systems
+            self._record_external_metric(name, value, metric_type, labels or {})
+
             # Check for alerts
             self._check_metric_alerts(name, value, metric_type)
 
             # Clean old data
             self._cleanup_old_metrics()
+
+    def _record_external_metric(self, name: str, value: float, metric_type: MetricType, labels: Dict[str, str]):
+        """Record metric to external systems (Prometheus, etc.)"""
+        try:
+            # Map our metric types to Prometheus metrics
+            prometheus_labels = {**labels, 'metric_name': name}
+
+            if metric_type == MetricType.TIMER:
+                self.external_observability.record_prometheus_metric(
+                    'operation_duration',
+                    value / 1000.0,  # Convert ms to seconds
+                    prometheus_labels
+                )
+            elif metric_type == MetricType.COUNTER:
+                self.external_observability.record_prometheus_metric(
+                    'operation_count',
+                    value,
+                    prometheus_labels
+                )
+            elif metric_type == MetricType.GAUGE:
+                self.external_observability.record_prometheus_metric(
+                    'system_resource',
+                    value,
+                    prometheus_labels
+                )
+
+        except Exception as e:
+            logger.warning(f"Failed to record external metric: {e}")
 
     def _check_metric_alerts(self, name: str, value: float, metric_type: MetricType):
         """Check if metric value triggers alerts."""
@@ -433,7 +597,8 @@ def get_metrics_collector() -> MetricsCollector:
 
 @register_tool(
     name="observability.metrics.record",
-    schema="./schemas/tool.observability.metrics.record.schema.json"
+    schema="./schemas/tool.observability.metrics.record.schema.json",
+    response_schema="./schemas/tool.observability.metrics.record.response.schema.json"
 )
 @circuit_breaker(
     config=CircuitBreakerConfig(
@@ -480,7 +645,8 @@ async def record_metric(params: Dict[str, Any]) -> Dict[str, Any]:
 
 @register_tool(
     name="observability.metrics.get",
-    schema="./schemas/tool.observability.metrics.get.schema.json"
+    schema="./schemas/tool.observability.metrics.get.schema.json",
+    response_schema="./schemas/tool.observability.metrics.get.response.schema.json"
 )
 @circuit_breaker(
     config=CircuitBreakerConfig(
@@ -522,7 +688,8 @@ async def get_metrics(params: Dict[str, Any]) -> Dict[str, Any]:
 
 @register_tool(
     name="observability.health.status",
-    schema="./schemas/tool.observability.health.status.schema.json"
+    schema="./schemas/tool.observability.health.status.schema.json",
+    response_schema="./schemas/tool.observability.health.status.response.schema.json"
 )
 @circuit_breaker(
     config=CircuitBreakerConfig(

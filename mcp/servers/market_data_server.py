@@ -44,7 +44,6 @@ class DataSource(Enum):
     YAHOO_FINANCE = "yahoo_finance"
     IEX_CLOUD = "iex_cloud"
     POLYGON = "polygon"
-    MOCK = "mock"  # Fallback for testing
 
 
 @dataclass
@@ -60,7 +59,7 @@ class MarketDataPoint:
     low_24h: Optional[float] = None
     open_price: Optional[float] = None
     close_price: Optional[float] = None
-    source: DataSource = DataSource.MOCK
+    source: DataSource = DataSource.ALPHA_VANTAGE
     metadata: Dict[str, Any] = None
 
     def __post_init__(self):
@@ -153,12 +152,6 @@ class MarketDataProvider:
                 enabled=True
             ))
 
-        # Always include mock source as fallback
-        sources.append(DataSourceConfig(
-            name=DataSource.MOCK,
-            priority=99,
-            enabled=True
-        ))
 
         # Sort by priority
         sources.sort(key=lambda x: x.priority)
@@ -209,8 +202,7 @@ class MarketDataProvider:
     async def get_real_time_data(self, symbols: List[str]) -> List[MarketDataPoint]:
         """Get real-time market data for symbols."""
         if aiohttp is None:
-            # Offline mode - return deterministic mock data
-            return [await self._fetch_mock_data(symbol.upper()) for symbol in symbols]
+            raise DataUnavailableError("aiohttp not available - cannot fetch real market data. This is a real-data-only endpoint.")
 
         if not self._session:
             raise RuntimeError("Session not initialized. Use async context manager.")
@@ -266,8 +258,6 @@ class MarketDataProvider:
             return await self._fetch_iex_cloud(symbol, source_config)
         elif source_config.name == DataSource.POLYGON:
             return await self._fetch_polygon(symbol, source_config)
-        elif source_config.name == DataSource.MOCK:
-            return await self._fetch_mock_data(symbol)
 
         return None
 
@@ -429,34 +419,6 @@ class MarketDataProvider:
             logger.error(f"Polygon fetch error for {symbol}: {e}")
             return None
 
-    async def _fetch_mock_data(self, symbol: str) -> MarketDataPoint:
-        """Generate mock data as fallback."""
-        # Generate deterministic but varied mock data
-        seed = int(hashlib.md5(symbol.encode()).hexdigest()[:8], 16)
-        base_price = 50 + (seed % 200)  # $50-$250 range
-
-        # Add some time-based variation
-        time_factor = int(time.time()) % 1000
-        price_variation = (time_factor % 21 - 10) / 100  # ±10%
-        current_price = base_price * (1 + price_variation)
-
-        return MarketDataPoint(
-            symbol=symbol,
-            timestamp=datetime.now(timezone.utc),
-            price=current_price,
-            volume=1000000 + (seed % 5000000),
-            bid=current_price - 0.01,
-            ask=current_price + 0.01,
-            high_24h=current_price * 1.05,
-            low_24h=current_price * 0.95,
-            open_price=current_price * 0.98,
-            close_price=current_price * 1.01,
-            source=DataSource.MOCK,
-            metadata={
-                "warning": "Mock data - not for production use",
-                "seed": seed
-            }
-        )
 
 
 # Global provider instance
@@ -544,6 +506,7 @@ def _generate_mock_ohlcv_rows(
 @register_tool(
     name="market-data.pricing.get_ohlcv",
     schema="./schemas/tool.market-data.pricing.get_ohlcv.schema.json",
+    response_schema="./schemas/tool.market-data.pricing.get_ohlcv.response.schema.json"
 )
 async def get_ohlcv(params: Dict[str, Any]) -> Dict[str, Any]:
     """Return OHLCV bars for the specified symbol and window."""
@@ -648,46 +611,8 @@ async def get_historical_market_data(params: Dict[str, Any]) -> Dict[str, Any]:
         if days > 365:  # Reasonable limit
             return {"error": f"Too many days: {days} (max 365)"}
 
-        # For now, return mock historical data
-        # In production, this would fetch from data sources
-        end_time = datetime.now(timezone.utc)
-        start_time = end_time - timedelta(days=days)
-
-        historical_data = []
-        current_time = start_time
-        base_price = 100.0
-
-        while current_time <= end_time:
-            # Simple random walk for mock data
-            price_change = (hash(current_time.isoformat()) % 100) / 500 - 0.1
-            base_price = max(base_price * (1 + price_change), 1.0)
-
-            point = MarketDataPoint(
-                symbol=symbol,
-                timestamp=current_time,
-                price=base_price,
-                volume=1000000,
-                open_price=base_price * 0.99,
-                high_24h=base_price * 1.02,
-                low_24h=base_price * 0.98,
-                close_price=base_price,
-                source=DataSource.MOCK,
-                metadata={"historical": True}
-            )
-
-            point_dict = asdict(point)
-            point_dict["timestamp"] = point.timestamp.isoformat()
-            historical_data.append(point_dict)
-
-            current_time += timedelta(hours=1)
-
-        return {
-            "success": True,
-            "symbol": symbol,
-            "data": historical_data,
-            "count": len(historical_data),
-            "period": f"{days} days"
-        }
+        # Real historical data only - no synthetic fallbacks
+        raise DataUnavailableError(f"Historical data for {symbol} not available - this endpoint requires real market data integration. Synthetic fallbacks have been removed.")
 
     except Exception as e:
         logger.error(f"Historical market data error: {e}")

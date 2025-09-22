@@ -21,71 +21,13 @@ logger = logging.getLogger(__name__)
 
 
 def _ensure_hmm():
-    """Return hmmlearn GaussianHMM or a deterministic fallback implementation."""
+    """Return hmmlearn GaussianHMM - no fallbacks for production use."""
     try:
         from hmmlearn.hmm import GaussianHMM  # type: ignore
         logger.info("Using hmmlearn GaussianHMM implementation")
         return GaussianHMM
     except ImportError:
-        logger.warning("hmmlearn not available; using deterministic fallback for regime detection")
-
-        class GaussianHMMFallback:
-            def __init__(self, n_components: int, covariance_type: str = "full", n_iter: int = 100, **_: Any) -> None:
-                self.n_components = n_components
-                self.covariance_type = covariance_type
-                self.n_iter = n_iter
-                self._state_means: np.ndarray | None = None
-                self._transitions: np.ndarray | None = None
-
-            def fit(self, features: np.ndarray) -> "GaussianHMMFallback":
-                if features.size == 0:
-                    raise ValueError("No features provided")
-                primary = features[:, 0]
-                percentiles = np.linspace(0, 100, self.n_components + 1)
-                bins = np.percentile(primary, percentiles)
-                bins[0] = -np.inf
-                bins[-1] = np.inf
-                states = np.digitize(primary, bins[1:-1], right=True)
-                self._state_means = np.vstack([
-                    features[states == idx].mean(axis=0) if np.any(states == idx) else np.zeros(features.shape[1])
-                    for idx in range(self.n_components)
-                ])
-
-                transitions = np.zeros((self.n_components, self.n_components), dtype=float)
-                for prev, nxt in zip(states[:-1], states[1:]):
-                    transitions[prev, nxt] += 1
-                transitions += 1  # Laplace smoothing
-                transitions /= transitions.sum(axis=1, keepdims=True)
-                self._transitions = transitions
-                self._last_states = states
-                return self
-
-            def predict(self, features: np.ndarray) -> np.ndarray:
-                if self._state_means is None:
-                    raise RuntimeError("Model must be fitted before prediction")
-                dists = np.linalg.norm(features[:, None, :] - self._state_means[None, :, :], axis=2)
-                return np.argmin(dists, axis=1)
-
-            def score(self, features: np.ndarray) -> float:
-                if self._state_means is None:
-                    raise RuntimeError("Model must be fitted before scoring")
-                preds = self.predict(features)
-                errors = features - self._state_means[preds]
-                return -float(np.mean(np.sum(errors ** 2, axis=1)))
-
-            @property
-            def transmat_(self) -> np.ndarray:
-                if self._transitions is None:
-                    raise RuntimeError("Model must be fitted before accessing transmat_")
-                return self._transitions
-
-            @property
-            def means_(self) -> np.ndarray:
-                if self._state_means is None:
-                    raise RuntimeError("Model must be fitted before accessing means_")
-                return self._state_means
-
-        return GaussianHMMFallback
+        raise ImportError("hmmlearn is required for regime detection. Install with: pip install hmmlearn")
 
 
 GaussianHMM = _ensure_hmm()

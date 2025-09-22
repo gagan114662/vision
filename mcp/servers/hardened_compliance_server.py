@@ -231,7 +231,8 @@ class HardenedComplianceEngine:
 
 @register_tool(
     name="compliance.audit.log_event",
-    schema="./schemas/tool.compliance.audit.log_event.schema.json"
+    schema="./schemas/tool.compliance.audit.log_event.schema.json",
+    response_schema="./schemas/tool.compliance.audit.log_event.response.schema.json"
 )
 @circuit_breaker(
     name="compliance_audit_log",
@@ -263,7 +264,8 @@ async def log_compliance_event(params: Dict[str, Any]) -> Dict[str, Any]:
 
 @register_tool(
     name="compliance.reporting.generate_regulatory_report",
-    schema="./schemas/tool.compliance.reporting.generate_regulatory_report.schema.json"
+    schema="./schemas/tool.compliance.reporting.generate_regulatory_report.schema.json",
+    response_schema="./schemas/tool.compliance.reporting.generate_regulatory_report.response.schema.json"
 )
 @circuit_breaker(
     name="compliance_regulatory_report",
