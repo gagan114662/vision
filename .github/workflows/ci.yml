@@ -86,9 +86,16 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
-      - name: Run MCP Registry Validation
+      - name: Run MCP Registry Validation with unittest
         run: |
-          echo "Running MCP Registry validation tests..."
+          echo "Running MCP Registry validation with unittest..."
+          python3 -m unittest tests.mcp.test_registry_validation
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Run MCP Registry Validation with pytest
+        run: |
+          echo "Running MCP Registry validation with pytest..."
           python -m pytest tests/mcp/test_registry_validation.py -v
         env:
           PYTHONPATH: ${{ github.workspace }}
@@ -173,19 +180,26 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Lean CLI
+      - name: Install dependencies
         run: |
-          pip install lean
+          python -m pip install --upgrade pip
+          pip install lean docker
 
-      - name: Run backtest validation
+      - name: Setup Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Run Real QuantConnect Backtest Validation
         env:
           QC_USER_ID: ${{ secrets.QC_USER_ID }}
           QC_API_TOKEN: ${{ secrets.QC_API_TOKEN }}
+          QUANTCONNECT_USER_ID: ${{ secrets.QC_USER_ID }}
+          QUANTCONNECT_API_TOKEN: ${{ secrets.QC_API_TOKEN }}
         run: |
-          # Run sample backtest
-          lean backtest --output ./lean/results/ci-test || true
+          echo "Running real QuantConnect backtest validation..."
+          python test_quantconnect_real_backtest.py
 
-          # Validate results
+      - name: Verify Non-Synthetic Results
+        run: |
           python -c "
           import json
           import sys
@@ -193,15 +207,45 @@ jobs:
 
           results_dir = Path('./lean/results')
           if not results_dir.exists():
-              print('No backtest results found')
-              sys.exit(0)
+              print('ERROR: No backtest results found')
+              sys.exit(1)
 
-          # Check for any successful backtests
-          for result_file in results_dir.glob('**/statistics.json'):
-              with open(result_file) as f:
-                  stats = json.load(f)
-                  print(f\"Sharpe Ratio: {stats.get('sharpe_ratio', 'N/A')}\")
-                  print(f\"Total Trades: {stats.get('total_trades', 'N/A')}\")
+          # Find latest result
+          result_dirs = sorted([d for d in results_dir.iterdir() if d.is_dir()])
+          if not result_dirs:
+              print('ERROR: No result directories found')
+              sys.exit(1)
+
+          latest_dir = result_dirs[-1]
+          print(f'Checking results in: {latest_dir}')
+
+          # Check for real statistics (not synthetic)
+          stats_files = list(latest_dir.glob('*-statistics.json'))
+          if not stats_files:
+              print('ERROR: No statistics file found')
+              sys.exit(1)
+
+          with open(stats_files[0]) as f:
+              stats = json.load(f)
+
+          # Validate this is real data
+          if 'IsSimulated' in stats and stats['IsSimulated']:
+              print('ERROR: Results are synthetic!')
+              sys.exit(1)
+
+          # Check for actual trades
+          if 'TotalPerformance' in stats:
+              total_trades = stats['TotalPerformance'].get('TotalTrades', 0)
+              if total_trades == 0:
+                  print('WARNING: No trades executed in backtest')
+              else:
+                  print(f'✓ Real backtest executed with {total_trades} trades')
+                  print(f\"  Sharpe Ratio: {stats['TotalPerformance'].get('SharpeRatio', 'N/A')}\")
+          else:
+              print('ERROR: Invalid statistics format')
+              sys.exit(1)
+
+          print('✓ QuantConnect backtest validation PASSED')
           "
 
   performance-benchmarks:
