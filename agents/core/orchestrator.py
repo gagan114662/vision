@@ -183,12 +183,15 @@ class RealMarketDataProvider:
                 logger.info(f"Retrieved {len(market_data)} historical data points for {symbol}")
                 return market_data
             else:
-                logger.warning(f"Historical data request failed: {result.get('error', 'Unknown error')}")
-                return await self._get_fallback_historical_data(symbol, start_time, end_time)
+                logger.error(f"Historical data request failed: {result.get('error', 'Unknown error')}")
+                from mcp.common.exceptions import DataUnavailableError
+                raise DataUnavailableError(f"Historical data service returned error: {result.get('error', 'Unknown error')}")
 
         except Exception as e:
             logger.error(f"Historical data error: {e}")
-            return await self._get_fallback_historical_data(symbol, start_time, end_time)
+            # DO NOT fall back to synthetic data - raise the error
+            from mcp.common.exceptions import DataUnavailableError
+            raise DataUnavailableError(f"Unable to get historical data for {symbol}: {str(e)}")
 
     async def _get_fallback_data(self, symbols: List[str]) -> List[MarketData]:
         """Fallback to mock data when real data is unavailable."""

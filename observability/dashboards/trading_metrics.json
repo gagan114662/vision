@@ -1,0 +1,54 @@
+{
+  "dashboard": {
+    "title": "Quantitative Trading System Metrics",
+    "panels": [
+      {
+        "title": "Agent Performance",
+        "targets": [
+          {
+            "expr": "agent_execution_duration_seconds"
+          },
+          {
+            "expr": "agent_success_rate"
+          }
+        ]
+      },
+      {
+        "title": "Market Data Latency",
+        "targets": [
+          {
+            "expr": "market_data_fetch_duration_seconds"
+          },
+          {
+            "expr": "market_data_cache_hit_rate"
+          }
+        ]
+      },
+      {
+        "title": "Circuit Breaker Status",
+        "targets": [
+          {
+            "expr": "circuit_breaker_state"
+          },
+          {
+            "expr": "circuit_breaker_failures_total"
+          }
+        ]
+      },
+      {
+        "title": "Portfolio Metrics",
+        "targets": [
+          {
+            "expr": "portfolio_value_usd"
+          },
+          {
+            "expr": "portfolio_sharpe_ratio"
+          },
+          {
+            "expr": "portfolio_var_95"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -562,39 +562,42 @@ async def get_ohlcv(params: Dict[str, Any]) -> Dict[str, Any]:
     if adjustment not in {"raw", "split", "dividend"}:
         raise ValueError("adjustment must be one of 'raw', 'split', or 'dividend'")
 
-    base_price: Optional[float] = None
     provider = await _get_provider()
     try:
         async with provider as active_provider:
-            data_points = await active_provider.get_real_time_data([symbol])
-            if data_points:
-                base_price = float(data_points[0].price)
-    except Exception as exc:  # pragma: no cover - network dependent branch
-        logger.warning(f"Falling back to synthetic OHLCV for {symbol}: {exc}")
+            # Get historical OHLCV data - NO FALLBACKS
+            rows = await active_provider.get_historical_ohlcv(
+                symbol, start, end, interval
+            )
 
-    rows = _generate_mock_ohlcv_rows(
-        symbol,
-        start,
-        end,
-        interval_seconds,
-        base_price=base_price,
-    )
+            if not rows:
+                from mcp.common.exceptions import DataUnavailableError
+                raise DataUnavailableError(
+                    f"No historical data available for {symbol} from {start} to {end}. "
+                    f"Please ensure market data provider has this symbol and date range."
+                )
 
-    provenance_ids = list({row["provenance_id"] for row in rows})
+            # Generate provenance IDs for real data
+            provenance_ids = [f"real_{vendor or 'default'}_{i}" for i in range(len(rows))]
 
-    if vendor and base_price is None:
-        logger.info(
-            "Vendor '%s' requested for %s but real data unavailable; served mock data",
-            vendor,
-            symbol,
+            return {
+                "symbol": symbol,
+                "interval": interval,
+                "rows": rows,
+                "provenance_ids": provenance_ids,
+                "data_source": "real",
+                "vendor": vendor or active_provider.__class__.__name__
+            }
+
+    except Exception as exc:
+        # DO NOT fall back to synthetic data - this is a real data-only endpoint
+        logger.error(f"Failed to get real OHLCV data for {symbol}: {exc}")
+        from mcp.common.exceptions import DataUnavailableError
+        raise DataUnavailableError(
+            f"Unable to retrieve market data for {symbol}: {str(exc)}. "
+            f"This is a real data-only endpoint - synthetic fallbacks have been removed. "
+            f"Please ensure market data provider credentials are configured correctly."
         )
-
-    return {
-        "symbol": symbol,
-        "interval": interval,
-        "rows": rows,
-        "provenance_ids": provenance_ids,
-    }
 
 
 async def get_real_time_market_data(params: Dict[str, Any]) -> Dict[str, Any]:

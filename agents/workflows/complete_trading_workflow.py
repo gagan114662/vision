@@ -137,6 +137,27 @@ class CompleteTradingWorkflow:
         self.start_time = datetime.now(timezone.utc)
         self.execution_history: List[Dict[str, Any]] = []
 
+        # Initialize mathematical toolkit integration
+        from agents.integration.mathematical_integration import MathematicalIntegration
+        try:
+            from mcp.servers.regime_hmm_server import HMMRegimeDetector
+            from mcp.servers.mean_reversion_ou_server import OUMeanReversionAnalyzer
+            from mcp.servers.signal_processing_server import SignalProcessor
+
+            self.mathematical_integration = MathematicalIntegration(
+                hmm_server=HMMRegimeDetector(),
+                ou_server=OUMeanReversionAnalyzer(),
+                signal_server=SignalProcessor()
+            )
+            logger.info("Mathematical toolkit integration initialized")
+        except Exception as e:
+            logger.warning(f"Failed to initialize mathematical integration: {e}")
+            self.mathematical_integration = None
+
+        # Initialize observability
+        from agents.observability_integration import get_observability
+        self.observability = get_observability()
+
         logger.info(f"Complete trading workflow initialized: {self.workflow_id}")
 
     async def initialize(self) -> None:
