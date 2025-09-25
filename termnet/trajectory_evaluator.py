@@ -172,6 +172,16 @@ class TrajectoryEvaluator:
             return self._persistent_conn
         return sqlite3.connect(self.db_path)
 
+    def close(self):
+        """Close persistent database connection if exists"""
+        if self._persistent_conn:
+            self._persistent_conn.close()
+            self._persistent_conn = None
+
+    def __del__(self):
+        """Cleanup persistent connections on object destruction"""
+        self.close()
+
     def start_trajectory(self, request_id: str, tags: List[str] = None) -> Trajectory:
         """Start tracking a new trajectory"""
         trajectory = Trajectory(
