@@ -3,15 +3,13 @@ Trajectory Evaluator - Layer 2 AgentOps evaluation
 Tracks ReAct loops: Reason → Act → Observe sequences
 """
 
-import hashlib
+import contextlib
 import json
 import sqlite3
-import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 class StepPhase(Enum):
@@ -94,83 +92,94 @@ class TrajectoryEvaluator:
             conn = self._persistent_conn
             need_close = False
         else:
-            conn = sqlite3.connect(self.db_path)
-            need_close = True
+            # Use context manager for file databases
+            with sqlite3.connect(self.db_path) as conn:
+                self._init_schema_tables(conn)
+            return
 
         try:
-            # Enable WAL mode for better performance (skip for in-memory)
-            if self.db_path != ":memory:":
-                conn.execute("PRAGMA journal_mode=WAL")
-
-            # Main trajectories table
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trajectories (
-                    request_id TEXT PRIMARY KEY,
-                    started_at TEXT NOT NULL,
-                    finished_at TEXT,
-                    status TEXT NOT NULL,
-                    tags_json TEXT,
-                    react_cycles INTEGER DEFAULT 0,
-                    total_latency_ms INTEGER DEFAULT 0
-                )
-            """
-            )
-
-            # Trajectory steps table
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS trajectory_steps (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    request_id TEXT NOT NULL,
-                    step_index INTEGER NOT NULL,
-                    phase TEXT NOT NULL,
-                    timestamp TEXT NOT NULL,
-                    latency_ms INTEGER NOT NULL,
-                    tool_name TEXT,
-                    tool_args_json TEXT,
-                    output_snippet TEXT,
-                    error TEXT,
-                    tokens_in INTEGER DEFAULT 0,
-                    tokens_out INTEGER DEFAULT 0,
-                    rationale_summary TEXT,
-                    evidence_refs_json TEXT,
-                    FOREIGN KEY (request_id) REFERENCES trajectories(request_id)
-                )
-            """
-            )
-
-            # Golden trajectories table
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS golden_trajectories (
-                    label TEXT NOT NULL,
-                    step_index INTEGER NOT NULL,
-                    phase TEXT NOT NULL,
-                    tool_name TEXT,
-                    expected_latency_ms INTEGER NOT NULL,
-                    PRIMARY KEY (label, step_index)
-                )
-            """
-            )
-
-            # Create indexes
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_steps_request ON trajectory_steps(request_id)"
-            )
-            conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_trajectories_status ON trajectories(status)"
-            )
-            conn.commit()
+            self._init_schema_tables(conn)
         finally:
             if need_close:
                 conn.close()
 
+    def _init_schema_tables(self, conn):
+        """Initialize database tables (extracted for reuse with context managers)"""
+        # Enable WAL mode for better performance (skip for in-memory)
+        if self.db_path != ":memory:":
+            conn.execute("PRAGMA journal_mode=WAL")
+
+        # Main trajectories table
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS trajectories (
+                request_id TEXT PRIMARY KEY,
+                started_at TEXT NOT NULL,
+                finished_at TEXT,
+                status TEXT NOT NULL,
+                tags_json TEXT,
+                react_cycles INTEGER DEFAULT 0,
+                total_latency_ms INTEGER DEFAULT 0
+            )
+        """
+        )
+
+        # Trajectory steps table
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS trajectory_steps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                request_id TEXT NOT NULL,
+                step_index INTEGER NOT NULL,
+                phase TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                latency_ms INTEGER NOT NULL,
+                tool_name TEXT,
+                tool_args_json TEXT,
+                output_snippet TEXT,
+                error TEXT,
+                tokens_in INTEGER DEFAULT 0,
+                tokens_out INTEGER DEFAULT 0,
+                rationale_summary TEXT,
+                evidence_refs_json TEXT,
+                FOREIGN KEY (request_id) REFERENCES trajectories(request_id)
+            )
+        """
+        )
+
+        # Golden trajectories table
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS golden_trajectories (
+                label TEXT NOT NULL,
+                step_index INTEGER NOT NULL,
+                phase TEXT NOT NULL,
+                tool_name TEXT,
+                expected_latency_ms INTEGER NOT NULL,
+                PRIMARY KEY (label, step_index)
+            )
+        """
+        )
+
+        # Create indexes
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_steps_request ON trajectory_steps(request_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_trajectories_status ON trajectories(status)"
+        )
+        conn.commit()
+
+    @contextlib.contextmanager
     def _get_connection(self):
-        """Get database connection, using persistent connection for in-memory DBs"""
+        """Get database connection with proper resource management"""
         if self._persistent_conn:
-            return self._persistent_conn
-        return sqlite3.connect(self.db_path)
+            # For in-memory databases, use persistent connection without closing
+            yield self._persistent_conn
+        else:
+            # For file databases, use context manager
+            with sqlite3.connect(self.db_path) as conn:
+                yield conn
 
     def close(self):
         """Close persistent database connection if exists"""
@@ -190,9 +199,7 @@ class TrajectoryEvaluator:
             tags=tags or [],
         )
 
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             conn.execute(
                 """
                 INSERT INTO trajectories
@@ -207,9 +214,6 @@ class TrajectoryEvaluator:
                 ),
             )
             conn.commit()
-        finally:
-            if need_close:
-                conn.close()
 
         self.active_trajectories[request_id] = []
         return trajectory
@@ -222,9 +226,7 @@ class TrajectoryEvaluator:
         self.active_trajectories[request_id].append(step)
 
         # Insert step with correct JSON serialization
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             conn.execute(
                 """
                 INSERT INTO trajectory_steps
@@ -250,15 +252,10 @@ class TrajectoryEvaluator:
                 ),
             )
             conn.commit()
-        finally:
-            if need_close:
-                conn.close()
 
     def _compute_react_cycles(self, request_id: str) -> int:
         """Count complete ReAct cycles, preferring OBSERVE count as fallback floor(num_steps/3)"""
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 SELECT phase FROM trajectory_steps
@@ -275,18 +272,13 @@ class TrajectoryEvaluator:
 
             # Fallback: floor(num_steps/3) for incomplete cycles
             return len(phases) // 3
-        finally:
-            if need_close:
-                conn.close()
 
     def finish_trajectory(self, request_id: str, status: TrajectoryStatus) -> None:
         """Mark trajectory as complete"""
         finished_at = datetime.now().isoformat()
 
         # Compute total latency from recorded steps
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 SELECT SUM(latency_ms) FROM trajectory_steps
@@ -308,9 +300,6 @@ class TrajectoryEvaluator:
                 (finished_at, status.value, total_latency, react_cycles, request_id),
             )
             conn.commit()
-        finally:
-            if need_close:
-                conn.close()
 
         # Clean up active tracking
         if request_id in self.active_trajectories:
@@ -318,9 +307,7 @@ class TrajectoryEvaluator:
 
     def save_golden(self, request_id: str, label: str, description: str = None) -> None:
         """Save a trajectory as golden reference"""
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             # Delete existing golden steps for this label
             conn.execute("DELETE FROM golden_trajectories WHERE label = ?", (label,))
 
@@ -347,15 +334,10 @@ class TrajectoryEvaluator:
                 )
 
             conn.commit()
-        finally:
-            if need_close:
-                conn.close()
 
     def compare_to_golden(self, request_id: str, label: str) -> Dict[str, Any]:
         """Compare trajectory to golden reference"""
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             # Get golden trajectory steps
             cursor = conn.execute(
                 """
@@ -429,19 +411,15 @@ class TrajectoryEvaluator:
                 "expected_steps": len(golden_steps),
                 "verdict": "PASS" if sequence_match and max_ratio <= 1.2 else "FAIL",
             }
-        finally:
-            if need_close:
-                conn.close()
 
     def get_trajectory(self, request_id: str) -> Dict[str, Any]:
         """Get full trajectory with steps"""
-        conn = self._get_connection()
-        need_close = not self._persistent_conn
-        try:
+        with self._get_connection() as conn:
             # Get trajectory
             cursor = conn.execute(
                 """
-                SELECT request_id, started_at, finished_at, status, tags_json, react_cycles, total_latency_ms
+                SELECT request_id, started_at, finished_at, status, tags_json,
+                       react_cycles, total_latency_ms
                 FROM trajectories WHERE request_id = ?
             """,
                 (request_id,),
@@ -463,9 +441,6 @@ class TrajectoryEvaluator:
             steps = cursor.fetchall()
 
             return {"trajectory": trajectory_row, "steps": steps}
-        finally:
-            if need_close:
-                conn.close()
 
     def print_trajectory(self, request_id: str) -> None:
         """Print trajectory in compact table format"""
