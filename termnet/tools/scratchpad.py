@@ -66,3 +66,39 @@ class Scratchpad:
             "notes_count": len(self._notes),
             "last_note": self._notes[-1] if self._notes else None
         }
+
+
+class ScratchpadTool:
+    """Test-compatible wrapper for scratchpad functionality"""
+
+    def __init__(self):
+        self._notes_dict: Dict[str, str] = {}
+
+    @property
+    def notes(self) -> Dict[str, str]:
+        """Notes dictionary for test compatibility"""
+        return self._notes_dict
+
+    def write(self, key: str, content: str) -> str:
+        """Write a note with key-value pair"""
+        self._notes_dict[key] = content
+        return f"Saved note '{key}'"
+
+    def read(self, key: str) -> str:
+        """Read a note by key"""
+        if key in self._notes_dict:
+            return self._notes_dict[key]
+        return f"Note '{key}' not found"
+
+    def list(self) -> str:
+        """List all notes"""
+        if not self._notes_dict:
+            return "No notes available"
+
+        notes_list = []
+        for key, content in self._notes_dict.items():
+            # Truncate long content for listing
+            display_content = content[:50] + "..." if len(content) > 50 else content
+            notes_list.append(f"  {key}: {display_content}")
+
+        return "Notes:\n" + "\n".join(notes_list)
