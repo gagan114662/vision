@@ -156,14 +156,18 @@ class TerminalSession:
                     command,
                     output,
                     exit_code,
-                    (f"Phase 3 execution via "
-                     f"{execution_result.sandbox_type.value if execution_result.sandbox_type else 'direct'}"),
+                    (
+                        f"Phase 3 execution via "
+                        f"{execution_result.sandbox_type.value if execution_result.sandbox_type else 'direct'}"
+                    ),
                 )
 
             # Phase 2 validation integration
-            if (self.validation_engine
-                    and success
-                    and self._should_validate_command(command)):
+            if (
+                self.validation_engine
+                and success
+                and self._should_validate_command(command)
+            ):
                 await self._validate_command_result(command, output)
 
             return output, exit_code, success
@@ -219,9 +223,11 @@ class TerminalSession:
         self._last_exit_code = code
 
         # Perform validation if enabled and command succeeded
-        if (self.validation_engine
-                and code == 0
-                and self._should_validate_command(command)):
+        if (
+            self.validation_engine
+            and code == 0
+            and self._should_validate_command(command)
+        ):
             await self._validate_command_result(command, output)
 
         return output, code, code == 0
@@ -396,3 +402,25 @@ class TerminalTool:
 
         except Exception as e:
             return {"stdout": "", "stderr": str(e), "exit_code": 1}
+
+    def get_definition(self) -> Dict[str, Any]:
+        """Get tool definition for registration"""
+        return {
+            "name": "terminal_execute",
+            "description": "Execute a command in the terminal and return output",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The command to execute"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Command timeout in seconds",
+                        "default": None
+                    }
+                },
+                "required": ["command"]
+            }
+        }

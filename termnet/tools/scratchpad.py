@@ -102,3 +102,77 @@ class ScratchpadTool:
             notes_list.append(f"  {key}: {display_content}")
 
         return "Notes:\n" + "\n".join(notes_list)
+
+    def run(self, key: str, content: str) -> dict:
+        """Store note and return dict result for compatibility"""
+        self._notes_dict[key] = content
+        return {"status": "success", "message": f"Stored note '{key}'"}
+
+    def append(self, key: str, content: str) -> dict:
+        """Append content to existing note or create new one"""
+        if key in self._notes_dict:
+            self._notes_dict[key] += "\n" + content
+            return {"status": "success", "message": f"Appended to note '{key}'"}
+        else:
+            self._notes_dict[key] = content
+            return {"status": "success", "message": f"Created new note '{key}'"}
+
+    def delete(self, key: str) -> dict:
+        """Delete a note by key"""
+        if key in self._notes_dict:
+            del self._notes_dict[key]
+            return {"status": "success", "message": f"Deleted note '{key}'"}
+        else:
+            return {"status": "error", "message": f"Note '{key}' not found"}
+
+    def clear(self) -> dict:
+        """Clear all notes"""
+        count = len(self._notes_dict)
+        self._notes_dict.clear()
+        return {"status": "success", "message": f"Cleared {count} notes"}
+
+    def search(self, query: str) -> list:
+        """Search notes by content or key"""
+        results = []
+        query_lower = query.lower()
+
+        for key, content in self._notes_dict.items():
+            if (query_lower in key.lower() or
+                query_lower in content.lower()):
+                results.append({
+                    "key": key,
+                    "content": content,
+                    "match_type": "key" if query_lower in key.lower() else "content"
+                })
+
+        return results
+
+    def get_definition(self) -> dict:
+        """Get tool definition for registration"""
+        return {
+            "name": "scratchpad",
+            "description": "Store, retrieve, and manage freeform notes",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["write", "read", "list", "delete", "clear", "search", "append"],
+                        "description": "Action to perform"
+                    },
+                    "key": {
+                        "type": "string",
+                        "description": "Note key/identifier"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Note content"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "Search query"
+                    }
+                },
+                "required": ["action"]
+            }
+        }

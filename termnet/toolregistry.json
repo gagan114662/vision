@@ -1,6 +1,7 @@
 [
   {
     "type": "function",
+    "enabled": true,
     "function": {
       "name": "terminal_execute",
       "description": "Execute a command in the terminal",
@@ -18,6 +19,7 @@
   },
   {
     "type": "function",
+    "enabled": true,
     "function": {
       "name": "browser_search",
       "description": "Open a Bing search URL in a browser and collect result titles, links, and snippets",
@@ -42,6 +44,7 @@
   },
   {
     "type": "function",
+    "enabled": false,
     "function": {
       "name": "browser_click_and_collect",
       "description": "Navigate to a given URL in the browser and extract visible text for deeper context",
@@ -59,7 +62,8 @@
     }
   },
   {
-    "type": "function",
+    "type": "other",
+    "enabled": true,
     "function": {
       "name": "scratchpad",
       "description": "A scratchpad/planner tool for the LLM to store, update, and retrieve freeform notes or planning thoughts.",
