@@ -68,23 +68,42 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: grype-report-${{ github.sha }}
-          path: results.json
+          path: |
+            results.json
+            grype-results.json
+            vulnerabilities.json
+          if-no-files-found: ignore
 
       - name: Generate Security Receipt
         run: |
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt || true
+          echo "Available files:"
+          ls -la *.json *.sarif 2>/dev/null || echo "No json/sarif files found"
           python3 <<'EOF'
           import json
           import hashlib
           from datetime import datetime
+          import os
 
           # Read scan results
           with open('trivy-results.sarif', 'r') as f:
               trivy_data = json.load(f)
 
-          with open('results.json', 'r') as f:
-              grype_data = json.load(f)
+          # Look for grype results file - try different possible names
+          grype_data = {}
+          possible_files = ['results.json', 'grype-results.json', 'vulnerabilities.json']
+          grype_file = None
+          for filename in possible_files:
+              if os.path.exists(filename):
+                  grype_file = filename
+                  break
+
+          if grype_file:
+              with open(grype_file, 'r') as f:
+                  grype_data = json.load(f)
+          else:
+              print("Warning: No grype results file found, continuing with empty data")
 
           # Count vulnerabilities
           vuln_counts = {'CRITICAL': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0}
