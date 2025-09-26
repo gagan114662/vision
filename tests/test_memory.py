@@ -3,6 +3,7 @@ Tests for ConversationMemory (L1 Component Testing)
 """
 
 import pytest
+
 from termnet.memory import ConversationMemory
 
 
@@ -177,7 +178,9 @@ def test_memory_persistence_disabled(memory):
 
     # Check current directory doesn't have unexpected database files
     current_files = os.listdir(".")
-    db_files = [f for f in current_files if f.endswith(".db") and "conversation" in f.lower()]
+    db_files = [
+        f for f in current_files if f.endswith(".db") and "conversation" in f.lower()
+    ]
 
     # Should not create conversation-related database files
     assert len(db_files) == 0 or all("conversation" not in f.lower() for f in db_files)
@@ -201,7 +204,7 @@ def test_role_types(memory):
 
 def test_special_characters(memory):
     """Test handling of special characters in messages"""
-    special_message = "Message with special chars: éñ中文🚀\n\t\"quotes\""
+    special_message = 'Message with special chars: éñ中文🚀\n\t"quotes"'
     memory.add("user", special_message)
 
     history = memory.get_history()

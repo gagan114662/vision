@@ -1,6 +1,6 @@
 import json
 import pathlib
-from typing import List, Tuple, Dict, Any
+from typing import Any, Dict, List, Tuple
 
 DATA_FILE = pathlib.Path(__file__).parent / "scratchpad.json"
 
@@ -8,11 +8,16 @@ DATA_FILE = pathlib.Path(__file__).parent / "scratchpad.json"
 class Scratchpad:
     def __init__(self):
         self._notes: List[str] = []
+        self._offline = False
         self._load_notes()
+
+    def set_offline_mode(self, offline: bool = True) -> None:
+        """Enable no-IO, in-memory operation so tests never touch disk/services."""
+        self._offline = offline
 
     def _load_notes(self):
         """Load notes from disk if the file exists"""
-        if DATA_FILE.exists():
+        if not self._offline and DATA_FILE.exists():
             try:
                 with open(DATA_FILE, "r", encoding="utf-8") as f:
                     self._notes = json.load(f)
@@ -22,17 +27,34 @@ class Scratchpad:
 
     def _save_notes(self):
         """Save notes to disk"""
-        try:
-            with open(DATA_FILE, "w", encoding="utf-8") as f:
-                json.dump(self._notes, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            print(f"❌ Failed to save scratchpad: {e}")
+        if not self._offline:
+            try:
+                with open(DATA_FILE, "w", encoding="utf-8") as f:
+                    json.dump(self._notes, f, indent=2, ensure_ascii=False)
+            except Exception as e:
+                print(f"❌ Failed to save scratchpad: {e}")
 
     async def start(self) -> bool:
         return True
 
     async def stop(self):
         return
+
+    def append(self, content: str) -> str:
+        """Add a note to the scratchpad"""
+        self._notes.append(content)
+        self._save_notes()
+        return f'📝 Note added: "{content}"'
+
+    def list(self) -> str:
+        """List all notes in the scratchpad"""
+        if not self._notes:
+            return "📝 Scratchpad is empty."
+
+        result = "📝 Scratchpad contents:\n"
+        for i, note in enumerate(self._notes, 1):
+            result += f"{i}. {note}\n"
+        return result.strip()
 
     async def run(self, action: str, content: str = "") -> Tuple[str, int, bool]:
         # Normalize action names
@@ -41,7 +63,7 @@ class Scratchpad:
         if action == "write":
             self._notes.append(content)
             self._save_notes()
-            return f"📝 Note added: \"{content}\"", 0, True
+            return f'📝 Note added: "{content}"', 0, True
 
         elif action in ("read_all", "read", "read_all_notes"):
             if not self._notes:
@@ -64,7 +86,7 @@ class Scratchpad:
     def get_context_info(self) -> Dict[str, Any]:
         return {
             "notes_count": len(self._notes),
-            "last_note": self._notes[-1] if self._notes else None
+            "last_note": self._notes[-1] if self._notes else None,
         }
 
 
@@ -73,6 +95,11 @@ class ScratchpadTool:
 
     def __init__(self):
         self._notes_dict: Dict[str, str] = {}
+        self._offline = False
+
+    def set_offline_mode(self, offline: bool = True) -> None:
+        """Enable no-IO, in-memory operation so tests never touch disk/services."""
+        self._offline = offline
 
     @property
     def notes(self) -> Dict[str, str]:
@@ -137,13 +164,16 @@ class ScratchpadTool:
         query_lower = query.lower()
 
         for key, content in self._notes_dict.items():
-            if (query_lower in key.lower() or
-                query_lower in content.lower()):
-                results.append({
-                    "key": key,
-                    "content": content,
-                    "match_type": "key" if query_lower in key.lower() else "content"
-                })
+            if query_lower in key.lower() or query_lower in content.lower():
+                results.append(
+                    {
+                        "key": key,
+                        "content": content,
+                        "match_type": "key"
+                        if query_lower in key.lower()
+                        else "content",
+                    }
+                )
 
         return results
 
@@ -157,22 +187,21 @@ class ScratchpadTool:
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["write", "read", "list", "delete", "clear", "search", "append"],
-                        "description": "Action to perform"
+                        "enum": [
+                            "write",
+                            "read",
+                            "list",
+                            "delete",
+                            "clear",
+                            "search",
+                            "append",
+                        ],
+                        "description": "Action to perform",
                     },
-                    "key": {
-                        "type": "string",
-                        "description": "Note key/identifier"
-                    },
-                    "content": {
-                        "type": "string",
-                        "description": "Note content"
-                    },
-                    "query": {
-                        "type": "string",
-                        "description": "Search query"
-                    }
+                    "key": {"type": "string", "description": "Note key/identifier"},
+                    "content": {"type": "string", "description": "Note content"},
+                    "query": {"type": "string", "description": "Search query"},
                 },
-                "required": ["action"]
-            }
+                "required": ["action"],
+            },
         }

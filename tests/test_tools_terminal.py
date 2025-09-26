@@ -2,8 +2,10 @@
 Tests for TerminalTool (L1 Component Testing)
 """
 
-import pytest
 import time
+
+import pytest
+
 from termnet.tools.terminal import TerminalTool
 
 
@@ -70,7 +72,9 @@ def test_large_output_handling(terminal_tool):
 
 def test_stderr_capture(terminal_tool):
     """Test stderr is captured when command fails"""
-    result = terminal_tool.run("python3 -c 'import sys; print(\"error msg\", file=sys.stderr); sys.exit(1)'")
+    result = terminal_tool.run(
+        "python3 -c 'import sys; print(\"error msg\", file=sys.stderr); sys.exit(1)'"
+    )
 
     assert result["exit_code"] == 1
     # Note: TerminalTool currently puts stderr in stdout if exit_code != 0
@@ -89,7 +93,7 @@ def test_empty_command(terminal_tool):
 
 def test_multiline_output(terminal_tool):
     """Test commands that produce multiline output"""
-    result = terminal_tool.run("python3 -c 'print(\"line1\"); print(\"line2\")'")
+    result = terminal_tool.run('python3 -c \'print("line1"); print("line2")\'')
 
     assert result["exit_code"] == 0
     assert "line1" in result["stdout"]
