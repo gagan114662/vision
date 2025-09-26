@@ -29,11 +29,11 @@ jobs:
           docker tag termnet-api:${{ github.sha }} termnet-api:latest
 
       - name: Generate SBOM with Syft
-        uses: anchore/syft-action@v0.12.0
+        uses: anchore/sbom-action@v0
         with:
-          image-ref: termnet-api:${{ github.sha }}
+          image: termnet-api:${{ github.sha }}
           artifact-name: sbom.spdx.json
-          output-format: spdx-json
+          format: spdx-json
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
@@ -57,18 +57,18 @@ jobs:
           sarif_file: 'trivy-results.sarif'
 
       - name: Scan with Grype
-        uses: anchore/grype-action@v0.16.0
+        uses: anchore/scan-action@v6
         with:
-          image-ref: termnet-api:${{ github.sha }}
+          image: termnet-api:${{ github.sha }}
           fail-build: false
           output-format: json
-          output-file: grype-report.json
+          severity-cutoff: negligible
 
       - name: Upload Grype results
         uses: actions/upload-artifact@v4
         with:
           name: grype-report-${{ github.sha }}
-          path: grype-report.json
+          path: results.json
 
       - name: Generate Security Receipt
         run: |
@@ -83,7 +83,7 @@ jobs:
           with open('trivy-results.sarif', 'r') as f:
               trivy_data = json.load(f)
 
-          with open('grype-report.json', 'r') as f:
+          with open('results.json', 'r') as f:
               grype_data = json.load(f)
 
           # Count vulnerabilities
